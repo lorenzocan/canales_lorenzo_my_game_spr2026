@@ -1,14 +1,15 @@
+import pygame as pg
+
 WIDTH = 800
 HEIGHT= 600
-TITLE = "funny game"
+TITLE = "Boss Rush" # idk it might be something I want to do later on
 FPS = 60
 TILESIZE = 32
 
 
 # Player values
 PLAYER_SPEED = 280
-
-
+PLAYER_HITRECT = pg.Rect(0, 0, TILESIZE-2, TILESIZE-2)
 
 
 # Colour
@@ -18,3 +19,5 @@ WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 YELLOW = (255, 255, 0)
+CYAN = (0, 255, 255)
+MAGENTA = (255, 0, 255)

@@ -4,6 +4,42 @@ from settings import *
 
 vec = pg.math.Vector2
 
+
+# creating a function for wall collision instead of in a class because it will be used regularly by all the classes
+# checks for collisions between "one" and "two" using colliderect method in the pygame library
+# the "hit_rect" is the PLAYER_HIT_RECT constant in settings
+def collide_hit_rect(one, two):
+    return one.hit_rect.colliderect(two.rect)
+
+
+# tells if "one" has collided with "two" using the boolean returned from the collide_hit_rect function
+# checks for x and y collision - sets pos based on collison dir
+def collide_with_walls(sprite, group, dir):
+    if dir == "x":
+        hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect) # the thing that checks the collision
+        if hits:
+            # print("collided with wall from x dir")
+            # checking position of wall relative to position of players hitbox to determine where to adjust player
+            if hits[0].rect.centerx > sprite.hit_rect.centerx:
+                sprite.pos.x = hits[0].rect.left - sprite.hit_rect.width / 2
+            if hits[0].rect.centerx < sprite.hit_rect.centerx:
+                sprite.pos.x = hits[0].rect.right + sprite.hit_rect.width / 2
+            sprite.vel.x = 0 # makes sure you don't phase through the wall
+            sprite.hit_rect.centerx = sprite.pos.x
+    # separation of x and y collision so that if you do something like collide in the x direction, you wouldn't want it to check for y collision
+    
+    if dir == "y":
+        hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
+        if hits:
+            # print("collided with wall from y dir")
+            if hits[0].rect.centery > sprite.hit_rect.centery:
+                sprite.pos.y = hits[0].rect.top - sprite.hit_rect.height / 2
+            if hits[0].rect.centery < sprite.hit_rect.centery:
+                sprite.pos.y = hits[0].rect.bottom + sprite.hit_rect.height / 2
+            sprite.vel.y = 0
+            sprite.hit_rect.centery = sprite.pos.y
+    
+
 class Player(Sprite):
     def __init__(self, game, x, y):
         self.groups = game.all_sprites
@@ -14,6 +50,7 @@ class Player(Sprite):
         self.rect = self.image.get_rect() # gives the engine the ability to know where the pixels are for the player
         self.vel = vec(0,0)
         self.pos = vec(x, y) * TILESIZE
+        self.hit_rect = PLAYER_HITRECT
 
     def get_keys(self):
         self.vel = vec(0,0) # setting velocity to 0 in order to make sure the character doesnt fly randomly 
@@ -34,10 +71,19 @@ class Player(Sprite):
         self.get_keys()
         self.rect.center = self.pos
         self.pos += self.vel * self.game.dt
-        hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
+
+    
+        self.hit_rect.centerx = self.pos.x
+        collide_with_walls(self, self.game.all_walls, 'x')
+        self.hit_rect.centery = self.pos.y
+        collide_with_walls(self, self.game.all_walls, 'y')
+        self.rect.center = self.hit_rect.center
+
+
+        # hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
         collect = pg.sprite.spritecollide(self, self.game.all_collectables, True)
-        if hits:
-            print("wahoooo")
+        # if hits:
+        #     print("wahoooo")
         if collect:
             print("you collected the coin thing")
 
@@ -53,12 +99,9 @@ class Mob(Sprite):
         self.pos = vec(x, y) * TILESIZE
         self.speed = 3
     def update(self):
-        hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
-        # if hits:
-        #     print("COLLIDE")
+        self.rect.center = self.pos
         
         # self.pos += self.game.player.pos*-self.game.dt
-        # self.rect.center = self.pos
         # self.pos += self.vel * self.speed * self.game.dt
     
 class Wall(Sprite):
@@ -85,5 +128,6 @@ class Coin(Sprite):
         self.rect = self.image.get_rect()
         self.pos = vec(x, y) * TILESIZE
         self.vel = vec(0,0)
+        self.rect.center = self.pos
     def update(self):
         pass

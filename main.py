@@ -1,5 +1,4 @@
 # game engine using template from Chris Bradfield's "Making Games with Python & Pygame"
-# I can push from vscode
 
 '''
 main file responsible for game loop including input, update, and draw methods
@@ -86,7 +85,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
     def update(self):
         self.all_sprites.update() # using the update method for all sprites under the group 'all_sprites'
 
-    def draw(self):
+    def draw(self): # method that is responsible for displaying everything on the screen
         self.screen.fill(BLUE)
         self.draw_text("Hello World", 24, WHITE, WIDTH/2, TILESIZE)
         self.draw_text(str(self.dt), 24, WHITE, WIDTH/2, HEIGHT/4)
