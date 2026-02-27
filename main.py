@@ -28,6 +28,8 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
     # a method is a function tied to a Class
     def load_data(self):
         self.game_dir = path.dirname(__file__) # '__file__' is representative of this whole file - self.game_dir is set to all files in my_game
+        self.img_dir = path.join(self.game_dir, 'images')
+        self.wall_image = pg.image.load(path.join(self.img_dir, 'Wall1.png'))
         self.map = Map(path.join(self.game_dir, 'level1.txt'))
         print('data loaded')
 
