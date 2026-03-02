@@ -50,8 +50,8 @@ class Player(Sprite):
         self.spritesheet = Spritesheet(path.join(self.game.img_dir, 'sprite_sheet.png'))
         # self note to make the spritesheet better since there is still black stuff in the bg of it
         self.image = pg.Surface((TILESIZE, TILESIZE))
-        # self.image.fill(WHITE)
         self.rect = self.image.get_rect() # gives the engine the ability to know where the pixels are for the player
+        self.load_images()
         self.vel = vec(0,0)
         self.pos = vec(x, y) * TILESIZE
         self.hit_rect = PLAYER_HITRECT
@@ -59,7 +59,6 @@ class Player(Sprite):
         self.walking = False
         self.last_update = 0
         self.current_frame = 0
-        self.load_images()
 
     def get_keys(self):
         self.vel = vec(0,0) # setting velocity to 0 in order to make sure the character doesnt fly randomly 
@@ -80,8 +79,12 @@ class Player(Sprite):
         # list to represent each sprite in the spritesheet
         self.standing_frames = [self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE),
                                 self.spritesheet.get_image(TILESIZE, 0, TILESIZE, TILESIZE)]
+        self.walking_frames = [self.spritesheet.get_image(0, TILESIZE, TILESIZE, TILESIZE),
+                                self.spritesheet.get_image(TILESIZE, TILESIZE, TILESIZE, TILESIZE)]
         # removes the background in each item in the list
         for frame in self.standing_frames:
+            frame.set_colorkey(BLACK)
+        for frame in self.walking_frames:
             frame.set_colorkey(BLACK)
         self.image = self.standing_frames[0]
         # print("loaded image")
@@ -89,11 +92,19 @@ class Player(Sprite):
     def animate(self):
         now = pg.time.get_ticks()
         if not self.jumping and not self.walking: # self.jumping and self.walking are just theoretical states the player could be in for now
-            if now - self.last_update > 2000:
+            if now - self.last_update > 500:
                 self.last_update = now # this is basically 'restarting' the timer but the numbers are relative to the value of now
                 self.current_frame = (self.current_frame + 1) % len(self.standing_frames) # makes current_frame += 1, but if it is the last item in list, current_frame = 0
                 bottom = self.rect.bottom
                 self.image = self.standing_frames[self.current_frame] # updates image using the new value for self.current_frame
+                self.rect = self.image.get_rect() # I think this is necessary for coordinates?
+                self.rect.bottom = bottom
+        elif self.walking:
+            if now - self.last_update > 500:
+                self.last_update = now # this is basically 'restarting' the timer but the numbers are relative to the value of now
+                self.current_frame = (self.current_frame + 1) % len(self.walking_frames) # makes current_frame += 1, but if it is the last item in list, current_frame = 0
+                bottom = self.rect.bottom
+                self.image = self.walking_frames[self.current_frame] # updates image using the new value for self.current_frame
                 self.rect = self.image.get_rect() # I think this is necessary for coordinates?
                 self.rect.bottom = bottom
     
@@ -112,9 +123,20 @@ class Player(Sprite):
 
     def update(self):
         self.get_keys()
+        
+        if self.vel != (0,0):
+            self.walking = True
+            # print("StWalk")
+        else:
+            self.walking = False
+        
+        
         self.animate()
         self.rect.center = self.pos
         self.pos += self.vel * self.game.dt
+
+        # state update
+        
 
         # updating hitbox to align with sprite,  
         self.hit_rect.centerx = self.pos.x
