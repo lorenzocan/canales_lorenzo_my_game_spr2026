@@ -39,6 +39,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         self.all_walls = pg.sprite.Group()
         self.all_mobs = pg.sprite.Group()
         self.all_collectables = pg.sprite.Group()
+        self.all_projectiles = pg.sprite.Group()
 
         # nested for loop to display each sprite to its respective position in level1.text
         for row, tiles in enumerate(self.map.data):

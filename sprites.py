@@ -48,22 +48,27 @@ class Player(Sprite):
         Sprite.__init__(self, self.groups)
         self.game = game
         self.spritesheet = Spritesheet(path.join(self.game.img_dir, 'sprite_sheet.png'))
-        # self note to make the spritesheet better since there is still black stuff in the bg of it
-        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image = self.spritesheet.get_image(0,0,TILESIZE,TILESIZE)
         self.rect = self.image.get_rect() # gives the engine the ability to know where the pixels are for the player
         self.load_images()
         self.vel = vec(0,0)
         self.pos = vec(x, y) * TILESIZE
         self.hit_rect = PLAYER_HITRECT
-        self.jumping = False
-        self.walking = False
+        self.StSprint = False
+        self.StWalk = False
         self.last_update = 0
         self.current_frame = 0
+        self.projectile_cd = Cooldown(500)
 
     def get_keys(self):
         self.vel = vec(0,0) # setting velocity to 0 in order to make sure the character doesnt fly randomly 
         keys = pg.key.get_pressed()
         
+        if keys[pg.K_f]:
+            if self.projectile_cd.ready():
+                self.projectile_cd.start() # resetting cooldown so that it's not a one time thing
+                p = Projectile(self.game, self.rect.x, self.rect.y)
+                print(len(self.game.all_projectiles))
         if keys[pg.K_a]:
             self.vel.x = -PLAYER_SPEED
         if keys[pg.K_d]:
@@ -77,66 +82,72 @@ class Player(Sprite):
 
     def load_images(self):
         # list to represent each sprite in the spritesheet
-        self.standing_frames = [self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE),
+        self.idle_frames = [self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE),
                                 self.spritesheet.get_image(TILESIZE, 0, TILESIZE, TILESIZE)]
         self.walking_frames = [self.spritesheet.get_image(0, TILESIZE, TILESIZE, TILESIZE),
                                 self.spritesheet.get_image(TILESIZE, TILESIZE, TILESIZE, TILESIZE)]
+        self.sprint_frames = [self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE),
+                                self.spritesheet.get_image(0, TILESIZE, TILESIZE, TILESIZE)]
         # removes the background in each item in the list
-        for frame in self.standing_frames:
+        for frame in self.idle_frames:
             frame.set_colorkey(BLACK)
         for frame in self.walking_frames:
             frame.set_colorkey(BLACK)
-        self.image = self.standing_frames[0]
-        # print("loaded image")
+        for frame in self.sprint_frames:
+            frame.set_colorkey(BLACK)
 
     def animate(self):
         now = pg.time.get_ticks()
-        if not self.jumping and not self.walking: # self.jumping and self.walking are just theoretical states the player could be in for now
+        if not self.StSprint and not self.StWalk: # self.jumping and self.walking are just theoretical states the player could be in for now
             if now - self.last_update > 500:
                 self.last_update = now # this is basically 'restarting' the timer but the numbers are relative to the value of now
-                self.current_frame = (self.current_frame + 1) % len(self.standing_frames) # makes current_frame += 1, but if it is the last item in list, current_frame = 0
+                self.current_frame = (self.current_frame + 1) % len(self.idle_frames) # makes current_frame += 1, but if it is the last item in list, current_frame = 0
                 bottom = self.rect.bottom
-                self.image = self.standing_frames[self.current_frame] # updates image using the new value for self.current_frame
+                self.image = self.idle_frames[self.current_frame] # updates image using the new value for self.current_frame
                 self.rect = self.image.get_rect() # I think this is necessary for coordinates?
                 self.rect.bottom = bottom
-        elif self.walking:
+        elif self.StWalk:
             if now - self.last_update > 500:
-                self.last_update = now # this is basically 'restarting' the timer but the numbers are relative to the value of now
-                self.current_frame = (self.current_frame + 1) % len(self.walking_frames) # makes current_frame += 1, but if it is the last item in list, current_frame = 0
+                self.last_update = now
+                self.current_frame = (self.current_frame + 1) % len(self.walking_frames)
                 bottom = self.rect.bottom
-                self.image = self.walking_frames[self.current_frame] # updates image using the new value for self.current_frame
-                self.rect = self.image.get_rect() # I think this is necessary for coordinates?
+                self.image = self.walking_frames[self.current_frame]
+                self.rect = self.image.get_rect()
                 self.rect.bottom = bottom
-    
-    # I am keeping this in here for now since I am trying to figure out what is different between these two
-    # because the one below (the one I typed) doesn't work, but the one above (copy & pasted) does work
-    # def animate(self):
-    #     now = pg.time.get_ticks()
-    #     if not self.jumping and not self.walking:
-    #         if now - self.last_update > 3500:
-    #             self.last_update = now
-    #             self.current_frame = (self.current_frame + 1) % len(self.standing_frames)
-    #             bottom = self.rect.bottom
-    #             self.iamge = self.standing_frames[self.current_frame]
-    #             self.rect = self.image.get_rect()
-    #             self.rect.bottom = bottom
+        elif self.StSprint:
+            if now - self.last_update > 250:
+                self.last_update = now
+                self.current_frame = (self.current_frame + 1) % len(self.walking_frames)
+                bottom = self.rect.bottom
+                self.image = self.walking_frames[self.current_frame]
+                self.rect = self.image.get_rect()
+                self.rect.bottom = bottom
+
+    # basic method to check for the state of the player at a given point in time
+    def state(self):
+        keys = pg.key.get_pressed()
+        
+        if keys[pg.K_RSHIFT]:
+            self.StSprint = True
+            self.StWalk = False
+        elif self.vel != (0,0):
+            self.StWalk = True
+            self.Sprint = False
+        else:
+            self.StWalk = False
+            self.StSprint = False
 
     def update(self):
+        # print(self.projectile_cd.ready())
         self.get_keys()
-        
-        if self.vel != (0,0):
-            self.walking = True
-            # print("StWalk")
-        else:
-            self.walking = False
-        
-        
+        self.state()
         self.animate()
         self.rect.center = self.pos
-        self.pos += self.vel * self.game.dt
-
-        # state update
         
+        if self.StSprint:
+            self.pos += self.vel * 1.5 * self.game.dt
+        else:
+            self.pos += self.vel * self.game.dt
 
         # updating hitbox to align with sprite,  
         self.hit_rect.centerx = self.pos.x
@@ -147,11 +158,7 @@ class Player(Sprite):
         # updating sprite to align with moved hitbox
         self.rect.center = self.hit_rect.center
 
-
-        # hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
         collect = pg.sprite.spritecollide(self, self.game.all_collectables, True)
-        # if hits:
-        #     print("wahoooo")
         if collect:
             print("you collected the coin thing")
 
@@ -176,9 +183,6 @@ class Mob(Sprite):
         self.hit_rect.centerx = self.pos.y
         collide_with_walls(self, self.game.all_walls, 'y')
         self.rect.center = self.hit_rect.center
-
-        # self.pos += self.game.player.pos*-self.game.dt
-        # self.pos += self.vel * self.speed * self.game.dt
     
 class Wall(Sprite):
     def __init__(self, game, x, y):
@@ -207,4 +211,23 @@ class Coin(Sprite):
         self.vel = vec(0,0)
         self.rect.center = self.pos
     def update(self):
+        pass
+
+class Projectile(Sprite):
+    def __init__(self, game, x, y):
+        self.groups = game.all_sprites, game.all_projectiles
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image.fill(RED)
+        self.rect = self.image.get_rect()
+        self.vel = vec(1,0)
+        self.pos = vec(x, y) * TILESIZE
+        self.speed = 3
+        print('sdfasalkflkdsajf')
+    def update(self):
+        hits = pg.sprite.spritecollide(self, self.game.all_sprites, False)
+        # print(hits)
+        self.pos += self.speed * self.vel * self.game.dt
+        self.rect.center = self.pos
         pass
