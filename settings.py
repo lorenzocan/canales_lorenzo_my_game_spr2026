@@ -13,6 +13,9 @@ PLAYER_HITRECT = pg.Rect(0, 0, TILESIZE-2, TILESIZE-2)
 
 MOB_HITRECT = pg.Rect(0, 0, TILESIZE, TILESIZE)
 
+PROJ_HITRECT = pg.Rect(0, 0, TILESIZE-2, 12)
+PROJ_SPEED = 540
+
 # Colour
 # a tuple that represents an rgb value
 BLUE = (0, 0, 255)

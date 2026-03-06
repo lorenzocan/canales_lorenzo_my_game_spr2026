@@ -81,6 +81,8 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_t:
                     print("i can determine when keys are pressed")
+                if event.key == pg.K_r:
+                    self.running = False
 
     def quit(self):
         pass

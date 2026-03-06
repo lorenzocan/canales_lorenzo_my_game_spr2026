@@ -58,7 +58,7 @@ class Player(Sprite):
         self.StWalk = False
         self.last_update = 0
         self.current_frame = 0
-        self.projectile_cd = Cooldown(500)
+        self.projectile_cd = Cooldown(250)
 
     def get_keys(self):
         self.vel = vec(0,0) # setting velocity to 0 in order to make sure the character doesnt fly randomly 
@@ -68,7 +68,10 @@ class Player(Sprite):
             if self.projectile_cd.ready():
                 self.projectile_cd.start() # resetting cooldown so that it's not a one time thing
                 p = Projectile(self.game, self.rect.x, self.rect.y)
+                # print('p', self.pos)
+                # print('p', self.rect.center)
                 print(len(self.game.all_projectiles))
+        
         if keys[pg.K_a]:
             self.vel.x = -PLAYER_SPEED
         if keys[pg.K_d]:
@@ -127,12 +130,12 @@ class Player(Sprite):
     def state(self):
         keys = pg.key.get_pressed()
         
-        if keys[pg.K_RSHIFT]:
+        if keys[pg.K_RSHIFT] and self.vel != (0,0):
             self.StSprint = True
             self.StWalk = False
         elif self.vel != (0,0):
             self.StWalk = True
-            self.Sprint = False
+            self.StSprint = False
         else:
             self.StWalk = False
             self.StSprint = False
@@ -149,7 +152,7 @@ class Player(Sprite):
         else:
             self.pos += self.vel * self.game.dt
 
-        # updating hitbox to align with sprite,  
+        # updating hitbox to align with sprite
         self.hit_rect.centerx = self.pos.x
         collide_with_walls(self, self.game.all_walls, 'x')
         self.hit_rect.centery = self.pos.y
@@ -190,14 +193,15 @@ class Wall(Sprite):
         Sprite.__init__(self, self.groups)
         self.game = game
         self.image = game.wall_image
-        # self.image = pg.Surface((TILESIZE, TILESIZE))
-        # self.image.fill(GREEN)
         self.rect = self.image.get_rect()
         self.vel = vec(0,0)
         self.pos = vec(x, y) * TILESIZE
+
         self.rect.center = self.pos
+
     def update(self):
-        pass
+        # kill projectile
+        pg.sprite.spritecollide(self, self.game.all_projectiles, True)
 
 class Coin(Sprite):
     def __init__(self, game, x, y):
@@ -213,21 +217,32 @@ class Coin(Sprite):
     def update(self):
         pass
 
+# Current Issue: first instance of projectile spawnws at (0,0)
 class Projectile(Sprite):
     def __init__(self, game, x, y):
         self.groups = game.all_sprites, game.all_projectiles
         Sprite.__init__(self, self.groups)
         self.game = game
-        self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(RED)
+        self.image = pg.Surface((TILESIZE-2, 12))
+        self.hit_rect = PROJ_HITRECT
+        self.image.fill(MAGENTA)
         self.rect = self.image.get_rect()
-        self.vel = vec(1,0)
-        self.pos = vec(x, y) * TILESIZE
+        self.vel = vec(PROJ_SPEED,0)
+        self.pos = vec(x, y)
         self.speed = 3
-        print('sdfasalkflkdsajf')
+        self.rect.center = self.pos + (TILESIZE/2, TILESIZE/2) # the TILESIZE/2 makes the sprite show up at player position
+        # instead of its center being placed at the top left corner
+
+        # print(self.pos)
+        # print(self.rect.center)
+
     def update(self):
-        hits = pg.sprite.spritecollide(self, self.game.all_sprites, False)
-        # print(hits)
         self.pos += self.speed * self.vel * self.game.dt
-        self.rect.center = self.pos
-        pass
+        self.rect.center = self.pos + (TILESIZE/2, TILESIZE/2)
+
+
+        # trying to figure out how to kill proj before in phases inside the wall
+        collide_with_walls(self, self.game.all_walls, 'x')
+        self.rect.centerx = self.pos.x + TILESIZE/2
+        collide_with_walls(self, self.game.all_walls, 'y')
+        self.rect.centery = self.pos.y + TILESIZE/2
