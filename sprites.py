@@ -40,7 +40,12 @@ def collide_with_walls(sprite, group, dir):
                 sprite.pos.y = hits[0].rect.bottom + sprite.hit_rect.height / 2
             sprite.vel.y = 0
             sprite.hit_rect.centery = sprite.pos.y
-    
+
+# a simple gravity function that is supposed to be available by all objects this module
+def gravity(sprite, terminal_yvel = 512, accel_multiplier = 1):
+    if terminal_yvel > sprite.vel.y:
+        sprite.vel.y += TILESIZE/2 * accel_multiplier
+        
 
 class Player(Sprite):
     def __init__(self, game, x, y):
@@ -59,9 +64,11 @@ class Player(Sprite):
         self.last_update = 0
         self.current_frame = 0
         self.projectile_cd = Cooldown(250)
+        self.test_gravity_cd = Cooldown(500)
 
     def get_keys(self):
-        self.vel = vec(0,0) # setting velocity to 0 in order to make sure the character doesnt fly randomly 
+        self.vel.x = 0 # setting velocity to 0 in order to make sure the character doesnt fly randomly
+        # this has to be self.vel.x or else the gravity wont work
         keys = pg.key.get_pressed()
         
         if keys[pg.K_f]:
@@ -76,12 +83,14 @@ class Player(Sprite):
             self.vel.x = -PLAYER_SPEED
         if keys[pg.K_d]:
             self.vel.x = PLAYER_SPEED
-        if keys[pg.K_w]:
-            self.vel.y = -PLAYER_SPEED
-        if keys[pg.K_s]:
-            self.vel.y = PLAYER_SPEED
-        if self.vel.x != 0 and self.vel.y != 0: # adjusting speed for diagonal movement
-            self.vel *= 0.7071
+        if keys[pg.K_SPACE]:
+            self.pos.y = TILESIZE+3
+        # if keys[pg.K_w]:
+        #     self.vel.y = -PLAYER_SPEED
+        # if keys[pg.K_s]:
+        #     self.vel.y = PLAYER_SPEED
+        # if self.vel.x != 0 and self.vel.y != 0: # adjusting speed for diagonal movement
+            # self.vel *= 0.7071
 
     def load_images(self):
         # list to represent each sprite in the spritesheet
@@ -148,9 +157,10 @@ class Player(Sprite):
         self.rect.center = self.pos
         
         if self.StSprint:
-            self.pos += self.vel * 1.5 * self.game.dt
+            self.pos.x += self.vel.x * 1.5 * self.game.dt
         else:
-            self.pos += self.vel * self.game.dt
+            self.pos.x += self.vel.x * self.game.dt
+        
 
         # updating hitbox to align with sprite
         self.hit_rect.centerx = self.pos.x
@@ -161,9 +171,12 @@ class Player(Sprite):
         # updating sprite to align with moved hitbox
         self.rect.center = self.hit_rect.center
 
-        collect = pg.sprite.spritecollide(self, self.game.all_collectables, True)
-        if collect:
-            print("you collected the coin thing")
+        gravity(self)
+        self.pos.y += self.vel.y * self.game.dt
+        # if self.test_gravity_cd.ready():
+        #     self.test_gravity_cd.start()
+        #     print(self.vel.y)
+        
 
 class Mob(Sprite):
     def __init__(self, game, x, y):

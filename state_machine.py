@@ -7,15 +7,16 @@ is_log_enabled: bool = False
 # object that can exit, enter, change, and get the name of the state
 class State():
     def __init__(self):
-        pass
+        self.state = "StNormal"
+        print(f"your state is {self.state}")
     def enter(self):
         pass
     def exit(self):
-        pass
+        self.state = "None"
     def update(self):
         pass
     def get_state_name(self):
-        pass
+        return self.state
 
 # object that 
 class StateMachine():

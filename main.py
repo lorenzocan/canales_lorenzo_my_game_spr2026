@@ -46,13 +46,13 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
             for col, tile, in enumerate(tiles):
                 if tile == "1":
                     # call class constructor without assigning variable when you want to call it multiple times where they don't need a special name assigned to it
-                    Wall(self, col, row)
+                    Wall(self, col + 0.5, row + 0.5)
                 if tile == 'P':
-                    self.player = Player(self, col, row)
+                    self.player = Player(self, col + 0.5, row + 0.5)
                 if tile == 'M':
-                    Mob(self, col, row)
+                    Mob(self, col + 0.5, row + 0.5)
                 if tile == 'C':
-                    Coin(self, col, row)
+                    Coin(self, col + 0.5, row + 0.5)
         
         self.run()
         

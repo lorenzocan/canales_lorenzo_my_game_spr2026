@@ -1,7 +1,7 @@
 import pygame as pg
 
-WIDTH = 800
-HEIGHT= 600
+WIDTH = 32*32
+HEIGHT = 32*24
 TITLE = "Boss Rush" # idk it might be something I want to do later on
 FPS = 60
 TILESIZE = 32
