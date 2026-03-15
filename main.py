@@ -35,6 +35,8 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
 
     def new(self):
         self.load_data()
+
+        # groups that objects in the sprite module will call on
         self.all_sprites = pg.sprite.Group()
         self.all_walls = pg.sprite.Group()
         self.all_mobs = pg.sprite.Group()
@@ -46,7 +48,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
             for col, tile, in enumerate(tiles):
                 if tile == "1":
                     # call class constructor without assigning variable when you want to call it multiple times where they don't need a special name assigned to it
-                    Wall(self, col + 0.5, row + 0.5)
+                    Wall(self, col + 0.5, row + 0.5) # + 0.5 is adjustment for rect center
                 if tile == 'P':
                     self.player = Player(self, col + 0.5, row + 0.5)
                 if tile == 'M':
@@ -72,16 +74,13 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
                 if self.playing:
                     self.playing = False
                 self.running = False
-            if event.type == pg.MOUSEBUTTONUP:
+            if event.type == pg.MOUSEBUTTONDOWN:
                 print("mouse input")
                 print(event.pos)
-            if event.type == pg.KEYUP:
-                if event.key == pg.K_k: # Upon releasing lowercase k, print the text below
-                    print("i can determine when keys are released")
             if event.type == pg.KEYDOWN:
-                if event.key == pg.K_t:
-                    print("i can determine when keys are pressed")
-                if event.key == pg.K_r:
+                if event.key == pg.K_q:
+                    if self.playing:
+                        self.playing = False
                     self.running = False
 
     def quit(self):

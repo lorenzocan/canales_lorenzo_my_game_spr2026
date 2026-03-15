@@ -44,7 +44,7 @@ def collide_with_walls(sprite, group, dir):
 # a simple gravity function that is supposed to be available by all objects this module
 def gravity(sprite, terminal_yvel = 512, accel_multiplier = 1):
     if terminal_yvel > sprite.vel.y:
-        sprite.vel.y += TILESIZE/2 * accel_multiplier
+        sprite.vel.y += TILESIZE * accel_multiplier
         
 
 class Player(Sprite):
@@ -61,14 +61,16 @@ class Player(Sprite):
         self.hit_rect = PLAYER_HITRECT
         self.StSprint = False
         self.StWalk = False
+        self.StDash = False
+        self.StFly = False 
         self.last_update = 0
         self.current_frame = 0
         self.projectile_cd = Cooldown(250)
-        self.test_gravity_cd = Cooldown(500)
+        self.dash_slash_cd = Cooldown(500)
 
     def get_keys(self):
-        self.vel.x = 0 # setting velocity to 0 in order to make sure the character doesnt fly randomly
-        # this has to be self.vel.x or else the gravity wont work
+        self.vel.x = 0 # setting velocity to 0 to make sure player stops after key release
+        # this has to be self.vel.x or else any y vel manipulation wont work
         keys = pg.key.get_pressed()
         
         if keys[pg.K_f]:
@@ -83,14 +85,19 @@ class Player(Sprite):
             self.vel.x = -PLAYER_SPEED
         if keys[pg.K_d]:
             self.vel.x = PLAYER_SPEED
+        if keys[pg.K_t]:
+            self.pos.y = TILESIZE
+        
+        # fly
         if keys[pg.K_SPACE]:
-            self.pos.y = TILESIZE+3
-        # if keys[pg.K_w]:
-        #     self.vel.y = -PLAYER_SPEED
-        # if keys[pg.K_s]:
-        #     self.vel.y = PLAYER_SPEED
-        # if self.vel.x != 0 and self.vel.y != 0: # adjusting speed for diagonal movement
-            # self.vel *= 0.7071
+            if self.vel.y > PLAYER_FLY_VEL: # if player y vel is going downwards (positive) on the screen or not at max vel
+                self.vel.y += PLAYER_FLY_ACCEL
+        
+        # dash slash
+        if keys[pg.K_LSHIFT]:
+            pass
+
+        # adjustment for diagonal movement is not necessary because y is vertical rather than technically being horizontal
 
     def load_images(self):
         # list to represent each sprite in the spritesheet
@@ -126,7 +133,7 @@ class Player(Sprite):
                 self.image = self.walking_frames[self.current_frame]
                 self.rect = self.image.get_rect()
                 self.rect.bottom = bottom
-        elif self.StSprint:
+        elif self.StSprint or self.StDash:
             if now - self.last_update > 250:
                 self.last_update = now
                 self.current_frame = (self.current_frame + 1) % len(self.walking_frames)
@@ -152,6 +159,8 @@ class Player(Sprite):
     def update(self):
         # print(self.projectile_cd.ready())
         self.get_keys()
+        gravity(self)
+        
         self.state()
         self.animate()
         self.rect.center = self.pos
@@ -161,6 +170,8 @@ class Player(Sprite):
         else:
             self.pos.x += self.vel.x * self.game.dt
         
+        # changing y pos value separate from x pos value
+        self.pos.y += self.vel.y * self.game.dt
 
         # updating hitbox to align with sprite
         self.hit_rect.centerx = self.pos.x
@@ -171,20 +182,15 @@ class Player(Sprite):
         # updating sprite to align with moved hitbox
         self.rect.center = self.hit_rect.center
 
-        gravity(self)
-        self.pos.y += self.vel.y * self.game.dt
-        # if self.test_gravity_cd.ready():
-        #     self.test_gravity_cd.start()
-        #     print(self.vel.y)
         
 
 class Mob(Sprite):
     def __init__(self, game, x, y):
-        self.groups = game.all_sprites
+        self.groups = game.all_sprites, game.all_mobs
         Sprite.__init__(self, self.groups)
         self.game = game
         self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(RED)
+        self.image.fill(CYAN)
         self.rect = self.image.get_rect()
         self.vel = vec(0,0)
         self.pos = vec(x, y) * TILESIZE
@@ -192,13 +198,22 @@ class Mob(Sprite):
         self.hit_rect = MOB_HITRECT
 
     def update(self):
+        # note to self: still not moving and also initializes in the wrong place
+        self.vel.x = PLAYER_SPEED
         self.rect.center = self.pos
+        
+        self.pos.x += self.vel.x * self.game.dt
         
         self.hit_rect.centerx = self.pos.x
         collide_with_walls(self, self.game.all_walls, 'x')
         self.hit_rect.centerx = self.pos.y
         collide_with_walls(self, self.game.all_walls, 'y')
+
         self.rect.center = self.hit_rect.center
+
+        # gravity(self)
+        # self.pos.y += self.vel.y * self.game.dt
+
     
 class Wall(Sprite):
     def __init__(self, game, x, y):
@@ -246,9 +261,6 @@ class Projectile(Sprite):
         self.rect.center = self.pos + (TILESIZE/2, TILESIZE/2) # the TILESIZE/2 makes the sprite show up at player position
         # instead of its center being placed at the top left corner
 
-        # print(self.pos)
-        # print(self.rect.center)
-
     def update(self):
         self.pos += self.speed * self.vel * self.game.dt
         self.rect.center = self.pos + (TILESIZE/2, TILESIZE/2)
@@ -259,3 +271,32 @@ class Projectile(Sprite):
         self.rect.centerx = self.pos.x + TILESIZE/2
         collide_with_walls(self, self.game.all_walls, 'y')
         self.rect.centery = self.pos.y + TILESIZE/2
+
+# Intended to be a superclass used by different bosses
+class Boss(Sprite):
+    def __init__(self, game, x, y, health, damage, speed, size, weight):
+        self.groups = game.all_sprites
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        self.image = pg.Surface((TILESIZE * size, TILESIZE * size))
+        self.image.fill(RED)
+        self.rect = self.image.get_rect()
+        self.vel = vec(0,0)
+        self.pos = vec(x, y) * TILESIZE
+        self.speed = speed
+        self.hp = health
+        self.attack_damage = damage
+        self.accel_multiplier = weight
+        self.hit_rect = self.image.get_rect()
+
+    def update(self):
+        self.rect.center = self.pos
+        
+        self.hit_rect.centerx = self.pos.x
+        collide_with_walls(self, self.game.all_walls, 'x')
+        self.hit_rect.centerx = self.pos.y
+        collide_with_walls(self, self.game.all_walls, 'y')
+        self.rect.center = self.hit_rect.center
+
+        gravity(self)
+

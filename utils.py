@@ -19,7 +19,7 @@ class Map:
 
 class Spritesheet:
     def __init__(self, filename):
-        self.spritesheet = pg.image.load(filename).convert()
+        self.spritesheet = pg.image.load(filename).convert() # gets spritesheet file on initialisation
 
     def get_image(self, x, y, width, height):
         image = pg.Surface((width, height)) 
@@ -33,14 +33,13 @@ class Cooldown:
     def __init__(self, time):
         self.start_time = 0
         # allows us to set property for time until cooldown
-        self.time = time
+        self.time = time # coolodown time
     def start(self):
-        self.start_time = pg.time.get_ticks()
+        self.start_time = pg.time.get_ticks() # "resets" the timer relative to the number of ticks when this was called
     def ready(self):
-        # sets current time to 
-        current_time = pg.time.get_ticks()
-        # if the change in time since calling ready and time since starting is greater than
-        # the set cooldown time, return true
+        current_time = pg.time.get_ticks() # time when this method has been called
+
+        # checking if the difference between the time that has passed and the time when started is greater than the cooldown time
         if current_time - self.start_time >= self.time:
             return True
         return False

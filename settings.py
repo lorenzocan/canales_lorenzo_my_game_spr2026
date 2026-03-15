@@ -2,13 +2,15 @@ import pygame as pg
 
 WIDTH = 32*32
 HEIGHT = 32*24
-TITLE = "Boss Rush" # idk it might be something I want to do later on
+TITLE = "Fragment"
 FPS = 60
 TILESIZE = 32
 
 
 # Player values
 PLAYER_SPEED = 280
+PLAYER_FLY_VEL = -512
+PLAYER_FLY_ACCEL = PLAYER_FLY_VEL / 7
 PLAYER_HITRECT = pg.Rect(0, 0, TILESIZE-2, TILESIZE-2)
 
 MOB_HITRECT = pg.Rect(0, 0, TILESIZE, TILESIZE)
