@@ -94,8 +94,10 @@ class Player(Sprite):
                 self.vel.y += PLAYER_FLY_ACCEL
         
         # dash slash
-        if keys[pg.K_LSHIFT]:
-            pass
+        # if keys[pg.K_LSHIFT]:
+        #     if self.dash_slash_cd.ready():
+        #         self.dash_slash_cd.start()
+
 
         # adjustment for diagonal movement is not necessary because y is vertical rather than technically being horizontal
 
@@ -146,15 +148,25 @@ class Player(Sprite):
     def state(self):
         keys = pg.key.get_pressed()
         
-        if keys[pg.K_RSHIFT] and self.vel != (0,0):
+        if keys[pg.K_LSHIFT]:
+            if self.dash_slash_cd.ready():
+                print("ready")
+                self.dash_slash_cd.start()
+                self.StDash = True
+                self.StSprint = False
+                self.StWalk = False
+        elif keys[pg.K_RSHIFT] and self.vel.x != 0:
             self.StSprint = True
             self.StWalk = False
-        elif self.vel != (0,0):
+            self.StDash = False
+        elif self.vel.x != 0:
             self.StWalk = True
             self.StSprint = False
+            self.StWalk = False
         else:
             self.StWalk = False
             self.StSprint = False
+            self.StDash = False
 
     def update(self):
         # print(self.projectile_cd.ready())
@@ -165,13 +177,24 @@ class Player(Sprite):
         self.animate()
         self.rect.center = self.pos
         
-        if self.StSprint:
+        if self.StDash:
+            """
+            The Plan:
+            big speed boost for short period of time - afterwards, big slowdown to whatever your vel should be
+            ypos unchanging during the dash state
+            upon first pressing lshift, stops character COMPLETELY for a couple frames, then initiating dash in desired direction
+            """
+            self.pos.x += self.vel.x * 5 * self.game.dt
+        elif self.StSprint:
             self.pos.x += self.vel.x * 1.5 * self.game.dt
         else:
             self.pos.x += self.vel.x * self.game.dt
         
         # changing y pos value separate from x pos value
-        self.pos.y += self.vel.y * self.game.dt
+        if self.StDash:
+            self.pos.y = self.pos.y
+        else:
+            self.pos.y += self.vel.y * self.game.dt
 
         # updating hitbox to align with sprite
         self.hit_rect.centerx = self.pos.x
