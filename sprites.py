@@ -65,8 +65,13 @@ class Player(Sprite):
         self.StFly = False 
         self.last_update = 0
         self.current_frame = 0
+        self.direction = "left"
         self.projectile_cd = Cooldown(250)
-        self.dash_slash_cd = Cooldown(500)
+        self.dash_slash_cd = Cooldown(2000)
+
+        # using cooldown object to describe a time length for the dash rather than a length of waiting
+        self.dash_slash_length = Cooldown(200) 
+        self.dash_slash_freeze_length = Cooldown(100)
 
     def get_keys(self):
         self.vel.x = 0 # setting velocity to 0 to make sure player stops after key release
@@ -81,22 +86,23 @@ class Player(Sprite):
                 # print('p', self.rect.center)
                 print(len(self.game.all_projectiles))
         
-        if keys[pg.K_a]:
-            self.vel.x = -PLAYER_SPEED
-        if keys[pg.K_d]:
-            self.vel.x = PLAYER_SPEED
-        if keys[pg.K_t]:
-            self.pos.y = TILESIZE
+        if not self.StDash:
+            if keys[pg.K_a]:
+                self.vel.x = -PLAYER_SPEED
+                self.direction = "left"
+            if keys[pg.K_d]:
+                self.vel.x = PLAYER_SPEED
+                self.direction = "right"
         
         # fly
         if keys[pg.K_SPACE]:
             if self.vel.y > PLAYER_FLY_VEL: # if player y vel is going downwards (positive) on the screen or not at max vel
                 self.vel.y += PLAYER_FLY_ACCEL
-        
-        # dash slash
-        # if keys[pg.K_LSHIFT]:
-        #     if self.dash_slash_cd.ready():
-        #         self.dash_slash_cd.start()
+
+        # checking dash cd
+        if keys[pg.K_e]:
+            if self.dash_slash_cd.ready():
+                print("work\ning")
 
 
         # adjustment for diagonal movement is not necessary because y is vertical rather than technically being horizontal
@@ -144,28 +150,43 @@ class Player(Sprite):
                 self.rect = self.image.get_rect()
                 self.rect.bottom = bottom
 
-    # basic method to check for the state of the player at a given point in time
+    # basic method to "change" the state of the player at a given point in time
     def state(self):
         keys = pg.key.get_pressed()
-        
+
+        # dashing -- this will definitely be moved back to get keys once i fugre out the state machine whenever
         if keys[pg.K_LSHIFT]:
             if self.dash_slash_cd.ready():
-                print("ready")
                 self.dash_slash_cd.start()
+
+                # starting timers to stop an action after a time period
+                self.dash_slash_length.start()
+                self.dash_slash_freeze_length.start()
+
                 self.StDash = True
                 self.StSprint = False
                 self.StWalk = False
-        elif keys[pg.K_RSHIFT] and self.vel.x != 0:
+    
+        elif keys[pg.K_RSHIFT] and self.vel.x != 0 and not self.StDash:
             self.StSprint = True
             self.StWalk = False
-            self.StDash = False
-        elif self.vel.x != 0:
+        elif self.vel.x != 0 and not self.StDash:
             self.StWalk = True
             self.StSprint = False
-            self.StWalk = False
         else:
             self.StWalk = False
             self.StSprint = False
+
+    def dash(self):
+        if self.dash_slash_freeze_length.ready():
+            # check most recent direction to fix the direction of dash
+            if self.direction == "left":
+                self.pos.x -= PLAYER_SPEED * 8 * self.game.dt
+            else:
+                self.pos.x += PLAYER_SPEED * 8 * self.game.dt
+        
+        # stop dashing once dash is over bascially lol
+        if self.dash_slash_length.ready():
             self.StDash = False
 
     def update(self):
@@ -175,25 +196,26 @@ class Player(Sprite):
         
         self.state()
         self.animate()
+
+        # position correction for now since you can just 0f through the wall when dashing
+        if self.pos.x > WIDTH-TILESIZE:
+            self.pos.x = WIDTH-TILESIZE
+            self.StDash = False
+        elif self.pos.x < TILESIZE:
+            self.pos.x = TILESIZE
+            self.StDash = False
+        
         self.rect.center = self.pos
         
         if self.StDash:
-            """
-            The Plan:
-            big speed boost for short period of time - afterwards, big slowdown to whatever your vel should be
-            ypos unchanging during the dash state
-            upon first pressing lshift, stops character COMPLETELY for a couple frames, then initiating dash in desired direction
-            """
-            self.pos.x += self.vel.x * 5 * self.game.dt
+            self.dash()
         elif self.StSprint:
             self.pos.x += self.vel.x * 1.5 * self.game.dt
         else:
             self.pos.x += self.vel.x * self.game.dt
         
         # changing y pos value separate from x pos value
-        if self.StDash:
-            self.pos.y = self.pos.y
-        else:
+        if not self.StDash: # if not dashing, y pos isn't fixed
             self.pos.y += self.vel.y * self.game.dt
 
         # updating hitbox to align with sprite
@@ -205,7 +227,6 @@ class Player(Sprite):
         # updating sprite to align with moved hitbox
         self.rect.center = self.hit_rect.center
 
-        
 
 class Mob(Sprite):
     def __init__(self, game, x, y):
