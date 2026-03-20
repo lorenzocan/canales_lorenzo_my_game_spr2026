@@ -3,6 +3,7 @@ from pygame.sprite import Sprite
 from settings import *
 from utils import *
 from os import path
+from math import sqrt
 
 vec = pg.math.Vector2
 
@@ -68,10 +69,12 @@ class Player(Sprite):
         self.direction = "left"
         self.projectile_cd = Cooldown(250)
         self.dash_slash_cd = Cooldown(2000)
+        self.effect_cd = Cooldown(200)
 
         # using cooldown object to describe a time length for the dash rather than a length of waiting
-        self.dash_slash_length = Cooldown(200) 
-        self.dash_slash_freeze_length = Cooldown(100)
+        self.dash_slash_length = Cooldown(300) 
+        self.dash_slash_freeze_length = Cooldown(200)
+        self.dash_slash_end_freeze_length = Cooldown(500) # this long to account for the 300 ticks spent dashing
 
     def get_keys(self):
         self.vel.x = 0 # setting velocity to 0 to make sure player stops after key release
@@ -123,6 +126,10 @@ class Player(Sprite):
         for frame in self.sprint_frames:
             frame.set_colorkey(BLACK)
 
+    def effects_trail(self):
+        if self.effect_cd.ready():
+            EffectTrail(self.game, self.rect.x, self.rect.y)
+
     def animate(self):
         now = pg.time.get_ticks()
         if not self.StSprint and not self.StWalk: # self.jumping and self.walking are just theoretical states the player could be in for now
@@ -162,6 +169,7 @@ class Player(Sprite):
                 # starting timers to stop an action after a time period
                 self.dash_slash_length.start()
                 self.dash_slash_freeze_length.start()
+                self.dash_slash_end_freeze_length.start()
 
                 self.StDash = True
                 self.StSprint = False
@@ -181,16 +189,24 @@ class Player(Sprite):
         if self.dash_slash_freeze_length.ready():
             # check most recent direction to fix the direction of dash
             if self.direction == "left":
-                self.pos.x -= PLAYER_SPEED * 8 * self.game.dt
+                self.pos.x -= PLAYER_SPEED * self.game.dt * 8
             else:
-                self.pos.x += PLAYER_SPEED * 8 * self.game.dt
+                self.pos.x += PLAYER_SPEED * self.game.dt * 8
         
         # stop dashing once dash is over bascially lol
         if self.dash_slash_length.ready():
-            self.StDash = False
+            if self.dash_slash_end_freeze_length.ready():
+                self.StDash = False
+            else:
+                pass
+                """
+                the problem: since pos is getting added by PLAYER_SPEED and other stuff,
+                setting vel to 0 will not help me get the desired freeze at the end,
+                so i have to figure that out somehow lol
+                """
 
     def update(self):
-        # print(self.projectile_cd.ready())
+        
         self.get_keys()
         gravity(self)
         
@@ -214,6 +230,9 @@ class Player(Sprite):
         else:
             self.pos.x += self.vel.x * self.game.dt
         
+        if self.StDash:
+            self.effects_trail()
+
         # changing y pos value separate from x pos value
         if not self.StDash: # if not dashing, y pos isn't fixed
             self.pos.y += self.vel.y * self.game.dt
@@ -344,3 +363,36 @@ class Boss(Sprite):
 
         gravity(self)
 
+class EffectTrail(Sprite):
+    def __init__(self, game, x, y):
+        self.game = game
+        self.groups = game.all_sprites
+        Sprite.__init__(self, self.groups)
+
+        self.image = pg.Surface((TILESIZE, TILESIZE), pg.SRCALPHA) # this is going to change to the dash sprite later
+
+        self.alpha = 255
+        self.image.fill((255,255,255,255))
+        self.rect = self.image.get_rect()
+        self.cd = Cooldown(10) # how long it takes for each effect to shrink & change alpha
+        self.rect.x = x
+        self.rect.y = y
+        self.scale_x = TILESIZE
+        self.scale_y = TILESIZE
+
+    def update(self):
+        if self.alpha <= 10:
+            self.kill()
+
+        # sets the alpha of the sprite for every update to the effect
+        self.image.fill((255,255,255,self.alpha))
+        
+        # the effects to the sprite if cd is ready
+        if self.cd.ready():
+            self.scale_x -= 2
+            self.scale_y -= 2
+            self.alpha -= 25
+
+            # sets the scale fo the sprite for every update to the effect
+            new_image = pg.transform.scale(self.image, (self.scale_x, self.scale_y)) 
+            self.image = new_image

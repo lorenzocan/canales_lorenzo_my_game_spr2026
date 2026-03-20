@@ -24,17 +24,42 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         self.running = True
         self.playing = True
         self.game_cooldown = Cooldown(3000)
+        self.current_level = 1
+        self.levels = ["LevelSelect","level1.txt","level2.txt"]
     
     # a method is a function tied to a Class
-    def load_data(self):
+    def load_data(self, map):
         self.game_dir = path.dirname(__file__) # '__file__' is representative of this whole file - self.game_dir is set to all files in my_game
         self.img_dir = path.join(self.game_dir, 'images')
         self.wall_image = pg.image.load(path.join(self.img_dir, 'Wall1.png'))
-        self.map = Map(path.join(self.game_dir, 'level1.txt'))
+        self.map = Map(path.join(self.game_dir, map))
         print('data loaded')
 
+    def next_level(self, map):
+        for s in self.all_sprites:
+            s.kill()
+        self.load_data(map)
+
+        self.all_sprites = pg.sprite.Group()
+        self.all_walls = pg.sprite.Group()
+        self.all_mobs = pg.sprite.Group()
+        self.all_collectables = pg.sprite.Group()
+        self.all_projectiles = pg.sprite.Group()
+
+        for row, tiles in enumerate(self.map.data):
+            for col, tile, in enumerate(tiles):
+                if tile == "1":
+                    Wall(self, col + 0.5, row + 0.5)
+                if tile == 'P':
+                    self.player = Player(self, col + 0.5, row + 0.5)
+                if tile == 'M':
+                    Mob(self, col + 0.5, row + 0.5)
+                if tile == 'C':
+                    Coin(self, col + 0.5, row + 0.5)
+
+    
     def new(self):
-        self.load_data()
+        self.load_data(self.levels[1])
 
         # groups that objects in the sprite module will call on
         self.all_sprites = pg.sprite.Group()
@@ -88,6 +113,9 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
 
     def update(self):
         self.all_sprites.update() # using the update method for all sprites under the group 'all_sprites'
+        if len(self.all_projectiles) > 1:
+            self.next_level(self.levels[self.current_level+1])
+    
 
     def draw(self): # method that is responsible for displaying everything on the screen
         self.screen.fill(BLUE)
