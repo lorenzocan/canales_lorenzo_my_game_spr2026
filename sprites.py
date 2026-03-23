@@ -43,7 +43,7 @@ def collide_with_walls(sprite, group, dir):
             sprite.hit_rect.centery = sprite.pos.y
 
 # a simple gravity function that is supposed to be available by all objects this module
-def gravity(sprite, terminal_yvel = 512, accel_multiplier = 1):
+def gravity(sprite, terminal_yvel = 768, accel_multiplier = 1):
     if terminal_yvel > sprite.vel.y:
         sprite.vel.y += TILESIZE * accel_multiplier
         
@@ -69,7 +69,7 @@ class Player(Sprite):
         self.direction = "left"
         self.projectile_cd = Cooldown(250)
         self.dash_slash_cd = Cooldown(2000)
-        self.effect_cd = Cooldown(200)
+        self.effect_cd = Cooldown(100)
 
         # using cooldown object to describe a time length for the dash rather than a length of waiting
         self.dash_slash_length = Cooldown(300) 
@@ -186,24 +186,21 @@ class Player(Sprite):
             self.StSprint = False
 
     def dash(self):
-        if self.dash_slash_freeze_length.ready():
-            # check most recent direction to fix the direction of dash
-            if self.direction == "left":
-                self.pos.x -= PLAYER_SPEED * self.game.dt * 8
-            else:
-                self.pos.x += PLAYER_SPEED * self.game.dt * 8
-        
-        # stop dashing once dash is over bascially lol
-        if self.dash_slash_length.ready():
-            if self.dash_slash_end_freeze_length.ready():
-                self.StDash = False
-            else:
+        if self.dash_slash_freeze_length.ready(): # after freeze time is done, do the moving
+
+            # if the dash time is in between the end of end dash freeze and the end of dash length, do not move
+            if not self.dash_slash_end_freeze_length.ready() and self.dash_slash_length.ready():
                 pass
-                """
-                the problem: since pos is getting added by PLAYER_SPEED and other stuff,
-                setting vel to 0 will not help me get the desired freeze at the end,
-                so i have to figure that out somehow lol
-                """
+            # check most recent direction to fix the direction of dash
+            elif self.direction == "left":
+                self.pos.x -= PLAYER_SPEED * self.game.dt * 12
+            else:
+                self.pos.x += PLAYER_SPEED * self.game.dt * 12
+        
+        # stop calling this function once dash is over
+        if self.dash_slash_length.ready() and self.dash_slash_end_freeze_length.ready():
+            self.StDash = False
+
 
     def update(self):
         

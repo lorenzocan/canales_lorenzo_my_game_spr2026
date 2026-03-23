@@ -17,6 +17,7 @@ from utils import *
 class Game: # the pen factory-the outline of the game-instances of the pen arent the factory itself!!!
     def __init__(self):
         pg.init()
+        pg.mixer.init()
         # settings up pygame screen using tuple value for width and height
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         pg.display.set_caption(TITLE)
@@ -31,7 +32,9 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
     def load_data(self, map):
         self.game_dir = path.dirname(__file__) # '__file__' is representative of this whole file - self.game_dir is set to all files in my_game
         self.img_dir = path.join(self.game_dir, 'images')
+        self.snd_dir = path.join(self.game_dir, 'Audio')
         self.wall_image = pg.image.load(path.join(self.img_dir, 'Wall1.png'))
+        # self.pickup_snd = pg.mixer.Sound(path.join(self.snd_dir, ""))
         self.map = Map(path.join(self.game_dir, map))
         print('data loaded')
 
@@ -80,7 +83,8 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
                     Mob(self, col + 0.5, row + 0.5)
                 if tile == 'C':
                     Coin(self, col + 0.5, row + 0.5)
-        
+        # pg.mixer.music.load(path.join(self.snd_dir, ""))
+        # pg.mixer.music.play(loops=-1)
         self.run()
         
 
