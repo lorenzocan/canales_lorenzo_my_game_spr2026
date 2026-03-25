@@ -24,6 +24,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         self.clock = pg.time.Clock()
         self.running = True
         self.playing = True
+        self.paused = False
         self.game_cooldown = Cooldown(3000)
         self.current_level = 1
         self.levels = ["LevelSelect","level1.txt","level2.txt"]
@@ -91,29 +92,33 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
     def run(self):
         while self.running:
             self.dt = self.clock.tick(FPS) / 1000 # delta time in seconds 
-
             self.events()
-            self.update()
+
+            if not self.paused:
+                self.update()
             self.draw()
 
     def events(self):
         # stuff that happens with peripherals - keyboard, mouse, camera, microphone, joystick, controller, touchscreen, stylus, trackpad
         for event in pg.event.get(): # to interate through every event
             if event.type == pg.QUIT:
-                if self.playing:
-                    self.playing = False
-                self.running = False
+                self.quit()
             if event.type == pg.MOUSEBUTTONDOWN:
                 print("mouse input")
                 print(event.pos)
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_q:
-                    if self.playing:
-                        self.playing = False
-                    self.running = False
+                    self.quit()
+                if event.key == pg.K_p:
+                    if self.paused:
+                        self.paused = False
+                    else:
+                        self.paused = True
 
     def quit(self):
-        pass
+        if self.playing:
+            self.playing = False
+        self.running = False
 
     def update(self):
         self.all_sprites.update() # using the update method for all sprites under the group 'all_sprites'
@@ -127,6 +132,10 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         self.draw_text(str(self.dt), 24, WHITE, WIDTH/2, HEIGHT/4)
         self.draw_text(str(self.game_cooldown.ready()), 24, WHITE, WIDTH/2, HEIGHT/3)
         self.draw_text(str(self.player.pos), 24, WHITE, WIDTH/2, HEIGHT-TILESIZE*3)
+
+        if self.paused:
+            self.draw_text("PAUSED", 100, WHITE, WIDTH/2, HEIGHT/2)
+
         self.all_sprites.draw(self.screen) # draws all sprites (walls, mobs, players, etc)
 
         pg.display.flip() # display the images and text on screen
@@ -139,9 +148,33 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         text_rect.midtop = (x,y)
         self.screen.blit(text_surface, text_rect)
 
-# makes sure you are calling Game from main.py ??
+    def show_start_screen(self):
+        self.screen.fill(BLACK)
+        self.draw_text("FRAGMENT", 50, WHITE, WIDTH/2, HEIGHT/2)
+        pg.display.flip() # basically drawing the stuff
+        self.wait_for_key()
+    
+    def show_pause_screen(self):
+        self.draw_text("PAUSED", 100, WHITE, WIDTH/2, HEIGHT/2)
+        pg.display.flip()
+
+    def wait_for_key(self):
+        waiting = True
+        while waiting:
+            self.clock.tick(FPS)
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    self.quit()
+                    self.running = False
+                if event.type == pg.KEYDOWN:
+                    waiting = False
+
+
+# makes sure you are calling Game from main.py
 if __name__ == "__main__":
     g = Game() # instantiates game upon running the code
+
+g.show_start_screen()
 
 while g.running: # upon instantiation the game which will set self.running() to True
     g.new()

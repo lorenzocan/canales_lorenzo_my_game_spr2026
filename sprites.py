@@ -186,6 +186,13 @@ class Player(Sprite):
             self.StSprint = False
 
     def dash(self):
+        """
+        NEW PROBLEM!!!!
+        While self.pasued, cooldowns still go, so basically dash will just end
+        if pause during a dash and resume
+        fixing this will require me to probably redo a lot of the stuff I set up lol
+        or note to self: upon pause get current time and set all timers to that value upon resume
+        """
         if self.dash_slash_freeze_length.ready(): # after freeze time is done, do the moving
 
             # if the dash time is in between the end of end dash freeze and the end of dash length, do not move
@@ -201,6 +208,11 @@ class Player(Sprite):
         if self.dash_slash_length.ready() and self.dash_slash_end_freeze_length.ready():
             self.StDash = False
 
+    def collide_with_stuff(self, group, kill):
+        hits = pg.sprite.spritecollide(self, group, kill)
+        if hits:
+            if str(hits[0].__class__.__name__) == "Mob": # gets the class name, turns it into a string which is compared with "Mob"
+                print("i collide with a mob")
 
     def update(self):
         
