@@ -137,6 +137,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
             self.draw_text("PAUSED", 100, WHITE, WIDTH/2, HEIGHT/2)
 
         self.all_sprites.draw(self.screen) # draws all sprites (walls, mobs, players, etc)
+        # draw_health_bar(self.screen, 10, 10, self.player.health)
 
         pg.display.flip() # display the images and text on screen
         
@@ -158,6 +159,8 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         self.draw_text("PAUSED", 100, WHITE, WIDTH/2, HEIGHT/2)
         pg.display.flip()
 
+
+    # while loop that stops itself upon key press
     def wait_for_key(self):
         waiting = True
         while waiting:

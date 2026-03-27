@@ -76,6 +76,8 @@ class Player(Sprite):
         self.dash_slash_freeze_length = Cooldown(200)
         self.dash_slash_end_freeze_length = Cooldown(500) # this long to account for the 300 ticks spent dashing
 
+        self.health = 100
+
     def get_keys(self):
         self.vel.x = 0 # setting velocity to 0 to make sure player stops after key release
         # this has to be self.vel.x or else any y vel manipulation wont work
@@ -118,6 +120,8 @@ class Player(Sprite):
                                 self.spritesheet.get_image(TILESIZE, TILESIZE, TILESIZE, TILESIZE)]
         self.sprint_frames = [self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE),
                                 self.spritesheet.get_image(0, TILESIZE, TILESIZE, TILESIZE)]
+        self.dash_frames = [self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE),
+                                self.spritesheet.get_image(0, TILESIZE, TILESIZE, TILESIZE)]
         # removes the background in each item in the list
         for frame in self.idle_frames:
             frame.set_colorkey(BLACK)
@@ -125,20 +129,30 @@ class Player(Sprite):
             frame.set_colorkey(BLACK)
         for frame in self.sprint_frames:
             frame.set_colorkey(BLACK)
+        for frame in self.dash_frames:
+            frame.set_colorkey(BLACK)
 
     def effects_trail(self):
         if self.effect_cd.ready():
-            EffectTrail(self.game, self.rect.x, self.rect.y)
+            EffectTrail(self.game, self.rect.x, self.rect.y, self.image)
 
     def animate(self):
         now = pg.time.get_ticks()
-        if not self.StSprint and not self.StWalk: # self.jumping and self.walking are just theoretical states the player could be in for now
+        if not self.StSprint and not self.StWalk and not self.StDash: # self.jumping and self.walking are just theoretical states the player could be in for now
             if now - self.last_update > 500:
                 self.last_update = now # this is basically 'restarting' the timer but the numbers are relative to the value of now
                 self.current_frame = (self.current_frame + 1) % len(self.idle_frames) # makes current_frame += 1, but if it is the last item in list, current_frame = 0
                 bottom = self.rect.bottom
                 self.image = self.idle_frames[self.current_frame] # updates image using the new value for self.current_frame
                 self.rect = self.image.get_rect() # I think this is necessary for coordinates?
+                self.rect.bottom = bottom
+        elif self.StDash:
+            if now - self.last_update > 250:
+                self.last_update = now
+                self.current_frame = (self.current_frame + 1) % len(self.walking_frames)
+                bottom = self.rect.bottom
+                self.image = self.dash_frames[self.current_frame]
+                self.rect = self.image.get_rect()
                 self.rect.bottom = bottom
         elif self.StWalk:
             if now - self.last_update > 500:
@@ -148,7 +162,7 @@ class Player(Sprite):
                 self.image = self.walking_frames[self.current_frame]
                 self.rect = self.image.get_rect()
                 self.rect.bottom = bottom
-        elif self.StSprint or self.StDash:
+        elif self.StSprint:
             if now - self.last_update > 250:
                 self.last_update = now
                 self.current_frame = (self.current_frame + 1) % len(self.walking_frames)
@@ -192,6 +206,8 @@ class Player(Sprite):
         if pause during a dash and resume
         fixing this will require me to probably redo a lot of the stuff I set up lol
         or note to self: upon pause get current time and set all timers to that value upon resume
+
+        also keeps moving once after dashing ends so i gotta fix tat
         """
         if self.dash_slash_freeze_length.ready(): # after freeze time is done, do the moving
 
@@ -207,6 +223,7 @@ class Player(Sprite):
         # stop calling this function once dash is over
         if self.dash_slash_length.ready() and self.dash_slash_end_freeze_length.ready():
             self.StDash = False
+            self.vel.x = 0
 
     def collide_with_stuff(self, group, kill):
         hits = pg.sprite.spritecollide(self, group, kill)
@@ -373,15 +390,15 @@ class Boss(Sprite):
         gravity(self)
 
 class EffectTrail(Sprite):
-    def __init__(self, game, x, y):
+    def __init__(self, game, x, y, sprite):
         self.game = game
         self.groups = game.all_sprites
         Sprite.__init__(self, self.groups)
 
-        self.image = pg.Surface((TILESIZE, TILESIZE), pg.SRCALPHA) # this is going to change to the dash sprite later
+        self.image = sprite # this is going to change to the dash sprite later
 
         self.alpha = 255
-        self.image.fill((255,255,255,255))
+        # self.image.fill((255,255,255,255))
         self.rect = self.image.get_rect()
         self.cd = Cooldown(10) # how long it takes for each effect to shrink & change alpha
         self.rect.x = x
@@ -394,7 +411,7 @@ class EffectTrail(Sprite):
             self.kill()
 
         # sets the alpha of the sprite for every update to the effect
-        self.image.fill((255,255,255,self.alpha))
+        self.image.set_alpha(self.alpha)
         
         # the effects to the sprite if cd is ready
         if self.cd.ready():
