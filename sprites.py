@@ -43,7 +43,7 @@ def collide_with_walls(sprite, group, dir):
             sprite.hit_rect.centery = sprite.pos.y
 
 # a simple gravity function that is supposed to be available by all objects this module
-def gravity(sprite, terminal_yvel = 768, accel_multiplier = 1):
+def gravity(sprite, terminal_yvel = STANDARD_MAX_YVEL, accel_multiplier = 1):
     if terminal_yvel > sprite.vel.y:
         sprite.vel.y += TILESIZE * accel_multiplier
         
@@ -76,6 +76,7 @@ class Player(Sprite):
         self.dash_slash_freeze_length = Cooldown(200)
         self.dash_slash_end_freeze_length = Cooldown(500) # this long to account for the 300 ticks spent dashing
 
+        self.dash_rect = pg.Rect(self.pos.x - TILESIZE, self.pos.y - TILESIZE,0,0)
         self.health = 100
 
     def get_keys(self):
@@ -110,7 +111,6 @@ class Player(Sprite):
                 print("work\ning")
 
 
-        # adjustment for diagonal movement is not necessary because y is vertical rather than technically being horizontal
 
     def load_images(self):
         # list to represent each sprite in the spritesheet
@@ -120,8 +120,8 @@ class Player(Sprite):
                                 self.spritesheet.get_image(TILESIZE, TILESIZE, TILESIZE, TILESIZE)]
         self.sprint_frames = [self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE),
                                 self.spritesheet.get_image(0, TILESIZE, TILESIZE, TILESIZE)]
-        self.dash_frames = [self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE),
-                                self.spritesheet.get_image(0, TILESIZE, TILESIZE, TILESIZE)]
+        self.dash_frames = [self.spritesheet.get_image(0, TILESIZE, TILESIZE, TILESIZE),
+                                self.spritesheet.get_image(TILESIZE, TILESIZE, TILESIZE, TILESIZE)]
         # removes the background in each item in the list
         for frame in self.idle_frames:
             frame.set_colorkey(BLACK)
@@ -147,9 +147,9 @@ class Player(Sprite):
                 self.rect = self.image.get_rect() # I think this is necessary for coordinates?
                 self.rect.bottom = bottom
         elif self.StDash:
-            if now - self.last_update > 250:
+            if now - self.last_update > 50:
                 self.last_update = now
-                self.current_frame = (self.current_frame + 1) % len(self.walking_frames)
+                self.current_frame = (self.current_frame + 1) % len(self.dash_frames)
                 bottom = self.rect.bottom
                 self.image = self.dash_frames[self.current_frame]
                 self.rect = self.image.get_rect()
@@ -200,30 +200,25 @@ class Player(Sprite):
             self.StSprint = False
 
     def dash(self):
-        """
-        NEW PROBLEM!!!!
-        While self.pasued, cooldowns still go, so basically dash will just end
-        if pause during a dash and resume
-        fixing this will require me to probably redo a lot of the stuff I set up lol
-        or note to self: upon pause get current time and set all timers to that value upon resume
-
-        also keeps moving once after dashing ends so i gotta fix tat
-        """
         if self.dash_slash_freeze_length.ready(): # after freeze time is done, do the moving
 
-            # if the dash time is in between the end of end dash freeze and the end of dash length, do not move
+            # if the dash time is in between the end of end dash freeze and the end of dash length, do not do anything
             if not self.dash_slash_end_freeze_length.ready() and self.dash_slash_length.ready():
                 pass
-            # check most recent direction to fix the direction of dash
-            elif self.direction == "left":
-                self.pos.x -= PLAYER_SPEED * self.game.dt * 12
-            else:
-                self.pos.x += PLAYER_SPEED * self.game.dt * 12
+
+            elif not self.dash_slash_length.ready(): # without this, movement happens as soon as everything ends
+                # check most recent direction to fix the direction of dash
+                if self.direction == "left" and not self.dash_slash_length.ready():
+                    self.pos.x -= PLAYER_SPEED * self.game.dt * 12
+                else:
+                    self.pos.x += PLAYER_SPEED * self.game.dt * 12
+                self.dash_rect = pg.Rect(self.pos.x - TILESIZE, self.pos.y - TILESIZE, TILESIZE * 2, TILESIZE * 2)
         
         # stop calling this function once dash is over
-        if self.dash_slash_length.ready() and self.dash_slash_end_freeze_length.ready():
+        if self.dash_slash_end_freeze_length.ready():
             self.StDash = False
             self.vel.x = 0
+            self.dash_rect = pg.Rect(self.pos.x - TILESIZE, self.pos.y - TILESIZE,0,0)
 
     def collide_with_stuff(self, group, kill):
         hits = pg.sprite.spritecollide(self, group, kill)
@@ -232,7 +227,6 @@ class Player(Sprite):
                 print("i collide with a mob")
 
     def update(self):
-        
         self.get_keys()
         gravity(self)
         
@@ -250,18 +244,15 @@ class Player(Sprite):
         self.rect.center = self.pos
         
         if self.StDash:
+            self.effects_trail()
             self.dash()
         elif self.StSprint:
             self.pos.x += self.vel.x * 1.5 * self.game.dt
-        else:
-            self.pos.x += self.vel.x * self.game.dt
-        
-        if self.StDash:
-            self.effects_trail()
-
-        # changing y pos value separate from x pos value
-        if not self.StDash: # if not dashing, y pos isn't fixed
+            
+            # Height not affected by moving faster in x cordinates
             self.pos.y += self.vel.y * self.game.dt
+        else:
+            self.pos += self.vel * self.game.dt
 
         # updating hitbox to align with sprite
         self.hit_rect.centerx = self.pos.x
@@ -285,23 +276,30 @@ class Mob(Sprite):
         self.pos = vec(x, y) * TILESIZE
         self.speed = 3
         self.hit_rect = MOB_HITRECT
+        self.health = 100
 
     def update(self):
-        # note to self: still not moving and also initializes in the wrong place
-        self.vel.x = PLAYER_SPEED
+        if self.health <= 0:
+            self.kill()
+        
+        gravity(self)
         self.rect.center = self.pos
+
+        if self.game.player.StDash: # reduce health when in the hitbox of player slash
+            if self.hit_rect.colliderect(self.game.player.dash_rect):
+                self.health -= 10
+                print(self.health)
+
+        # self.vel.x = PLAYER_SPEED
+        self.pos += self.vel * self.game.dt
         
-        self.pos.x += self.vel.x * self.game.dt
-        
-        self.hit_rect.centerx = self.pos.x
+        self.hit_rect.center = self.pos
         collide_with_walls(self, self.game.all_walls, 'x')
-        self.hit_rect.centerx = self.pos.y
         collide_with_walls(self, self.game.all_walls, 'y')
 
         self.rect.center = self.hit_rect.center
 
-        # gravity(self)
-        # self.pos.y += self.vel.y * self.game.dt
+ 
 
     
 class Wall(Sprite):
@@ -319,6 +317,7 @@ class Wall(Sprite):
     def update(self):
         # kill projectile
         pg.sprite.spritecollide(self, self.game.all_projectiles, True)
+
 
 class Coin(Sprite):
     def __init__(self, game, x, y):
@@ -395,10 +394,9 @@ class EffectTrail(Sprite):
         self.groups = game.all_sprites
         Sprite.__init__(self, self.groups)
 
-        self.image = sprite # this is going to change to the dash sprite later
+        self.image = sprite
 
         self.alpha = 255
-        # self.image.fill((255,255,255,255))
         self.rect = self.image.get_rect()
         self.cd = Cooldown(10) # how long it takes for each effect to shrink & change alpha
         self.rect.x = x

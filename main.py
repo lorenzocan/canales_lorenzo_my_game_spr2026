@@ -63,7 +63,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
 
     
     def new(self):
-        self.load_data(self.levels[1])
+        self.load_data(self.levels[2])
 
         # groups that objects in the sprite module will call on
         self.all_sprites = pg.sprite.Group()

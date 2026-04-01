@@ -1,6 +1,14 @@
 import pygame as pg
 from settings import *
 
+"""
+While self.pasued, cooldowns still go, so basically dash will just end
+if pause during a dash and resume
+fixing this will require me to probably redo a lot of the stuff I set up lol
+or note to self: upon pause get current time and set all timers to that value upon resume
+"""
+
+
 class Map:
     def __init__(self, filename):
         # creating data for building the map using a list
