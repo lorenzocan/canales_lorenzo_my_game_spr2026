@@ -42,15 +42,31 @@ class Cooldown:
         self.start_time = 0
         # allows us to set property for time until cooldown
         self.time = time # coolodown time
+        self.current_time = pg.time.get_ticks()
+        self.time_diff = self.current_time-self.start_time
     def start(self):
         self.start_time = pg.time.get_ticks() # "resets" the timer relative to the number of ticks when this was called
     def ready(self):
-        current_time = pg.time.get_ticks() # time when this method has been called
-
+        self.current_time = pg.time.get_ticks() # time when this method has been called
         # checking if the difference between the time that has passed and the time when started is greater than the cooldown time
-        if current_time - self.start_time >= self.time:
+        self.time_diff = self.current_time - self.start_time
+        if self.time_diff >= self.time:
             return True
         return False
+    def pause(self):
+        """
+        trying to make the difference between self.current_time and self.start_time always stay the same while paused
+        """
+        self.start_time = self.current_time
+        # problem: it doesnt change w/ current time
+    def show(self):
+        current_time = pg.time.get_ticks()
+        """
+        i will consider this 'paused' when the number returned stays constant while paused
+        """
+        return (current_time - self.start_time, (self.start_time,current_time))
+
+
 
 # def draw_health_bar(surf, x, y, pct):
 #     if pct < 0:

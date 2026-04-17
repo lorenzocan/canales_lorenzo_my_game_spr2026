@@ -79,6 +79,14 @@ class Player(Sprite):
         self.dash_rect = pg.Rect(self.pos.x - TILESIZE, self.pos.y - TILESIZE,0,0)
         self.health = 100
 
+    def cd_pause(self):
+        self.effect_cd.pause()
+        self.projectile_cd.pause()
+        self.dash_slash_cd.pause()
+        self.dash_slash_length.pause() 
+        self.dash_slash_freeze_length.pause()
+        self.dash_slash_end_freeze_length.pause()
+
     def get_keys(self):
         self.vel.x = 0 # setting velocity to 0 to make sure player stops after key release
         # this has to be self.vel.x or else any y vel manipulation wont work
@@ -109,8 +117,6 @@ class Player(Sprite):
         if keys[pg.K_e]:
             if self.dash_slash_cd.ready():
                 print("work\ning")
-
-
 
     def load_images(self):
         # list to represent each sprite in the spritesheet
@@ -212,12 +218,15 @@ class Player(Sprite):
                     self.pos.x -= PLAYER_SPEED * self.game.dt * 12
                 else:
                     self.pos.x += PLAYER_SPEED * self.game.dt * 12
+                
+                # dash hitbox moves along with player during the duration of the dash
                 self.dash_rect = pg.Rect(self.pos.x - TILESIZE, self.pos.y - TILESIZE, TILESIZE * 2, TILESIZE * 2)
         
-        # stop calling this function once dash is over
+        # stop calling this function once dash is over (because StDash is False)
         if self.dash_slash_end_freeze_length.ready():
             self.StDash = False
             self.vel.x = 0
+            # ensures hitbox won't take up space to affect enemy health only when dashing
             self.dash_rect = pg.Rect(self.pos.x - TILESIZE, self.pos.y - TILESIZE,0,0)
 
     def collide_with_stuff(self, group, kill):
@@ -420,3 +429,7 @@ class EffectTrail(Sprite):
             # sets the scale fo the sprite for every update to the effect
             new_image = pg.transform.scale(self.image, (self.scale_x, self.scale_y)) 
             self.image = new_image
+
+            # adjusts to new scaling
+            self.rect.x += 1
+            self.rect.y += 1
