@@ -54,17 +54,16 @@ class Cooldown:
             return True
         return False
     def pause(self):
-        """
-        trying to make the difference between self.current_time and self.start_time always stay the same while paused
-        """
-        self.start_time = self.current_time
-        # problem: it doesnt change w/ current time
+        self.start_time = pg.time.get_ticks() - (self.current_time-self.start_time)
+        
+
+
     def show(self):
-        current_time = pg.time.get_ticks()
+        current_time = self.current_time
         """
         i will consider this 'paused' when the number returned stays constant while paused
         """
-        return (current_time - self.start_time, (self.start_time,current_time))
+        return (current_time - self.start_time, (self.start_time, current_time))
 
 
 

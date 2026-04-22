@@ -4,6 +4,9 @@ from settings import *
 from utils import *
 from os import path
 from math import sqrt
+from state_machine import *
+from ctypes import Array
+from player_states import *
 
 vec = pg.math.Vector2
 
@@ -60,38 +63,42 @@ class Player(Sprite):
         self.vel = vec(0,0)
         self.pos = vec(x, y) * TILESIZE
         self.hit_rect = PLAYER_HITRECT
-        self.StSprint = False
-        self.StWalk = False
-        self.StDash = False
-        self.StFly = False 
+        # self.StSprint = False
+        # self.StWalk = False
+        # self.StDash = False
+        # self.StFly = False 
+
+        self.state_machine = StateMachine()
+        self.states: Array[State] = [PlayerFlyState(self), PlayerDashState(self)]
+        self.state_machine.start_machine(self.states)
         self.last_update = 0
         self.current_frame = 0
         self.direction = "left"
-        self.projectile_cd = Cooldown(250)
-        self.dash_slash_cd = Cooldown(2000)
+        # self.projectile_cd = Cooldown(250)
+
+        # self.dash_slash_cd = Cooldown(2000)
         self.effect_cd = Cooldown(100)
 
         # using cooldown object to describe a time length for the dash rather than a length of waiting
-        self.dash_slash_length = Cooldown(300) 
-        self.dash_slash_freeze_length = Cooldown(200)
-        self.dash_slash_end_freeze_length = Cooldown(500) # this long to account for the 300 ticks spent dashing
+        # self.dash_slash_length = Cooldown(300) 
+        # self.dash_slash_freeze_length = Cooldown(200)
+        # self.dash_slash_end_freeze_length = Cooldown(500) # this long to account for the 300 ticks spent dashing
 
-        self.dash_rect = pg.Rect(self.pos.x - TILESIZE, self.pos.y - TILESIZE,0,0)
+        # self.dash_rect = pg.Rect(self.pos.x - TILESIZE, self.pos.y - TILESIZE,0,0)
         self.health = 100
-
-    def cd_pause(self):
-        self.effect_cd.pause()
-        self.projectile_cd.pause()
-        self.dash_slash_cd.pause()
-        self.dash_slash_length.pause() 
-        self.dash_slash_freeze_length.pause()
-        self.dash_slash_end_freeze_length.pause()
 
     def get_keys(self):
         self.vel.x = 0 # setting velocity to 0 to make sure player stops after key release
         # this has to be self.vel.x or else any y vel manipulation wont work
         keys = pg.key.get_pressed()
         
+        # move to main later to fix the problem of being able to hold the key
+        if self.state_machine.current_state != "dash":
+            if keys[pg.K_LSHIFT]:
+                print(self.state_machine.current_state)
+                self.state_machine.transition("dash")
+                print(12321313)
+
         if keys[pg.K_f]:
             if self.projectile_cd.ready():
                 self.projectile_cd.start() # resetting cooldown so that it's not a one time thing
@@ -100,7 +107,7 @@ class Player(Sprite):
                 # print('p', self.rect.center)
                 print(len(self.game.all_projectiles))
         
-        if not self.StDash:
+        if self.state_machine.current_state != "dash":
             if keys[pg.K_a]:
                 self.vel.x = -PLAYER_SPEED
                 self.direction = "left"
@@ -112,11 +119,6 @@ class Player(Sprite):
         if keys[pg.K_SPACE]:
             if self.vel.y > PLAYER_FLY_VEL: # if player y vel is going downwards (positive) on the screen or not at max vel
                 self.vel.y += PLAYER_FLY_ACCEL
-
-        # checking dash cd
-        if keys[pg.K_e]:
-            if self.dash_slash_cd.ready():
-                print("work\ning")
 
     def load_images(self):
         # list to represent each sprite in the spritesheet
@@ -205,6 +207,9 @@ class Player(Sprite):
             self.StWalk = False
             self.StSprint = False
 
+    def state_check(self):
+        pass
+
     def dash(self):
         if self.dash_slash_freeze_length.ready(): # after freeze time is done, do the moving
 
@@ -236,11 +241,12 @@ class Player(Sprite):
                 print("i collide with a mob")
 
     def update(self):
+        self.state_machine.update()
         self.get_keys()
         gravity(self)
-        
-        self.state()
-        self.animate()
+        self.state_check()
+        # self.state()
+        # self.animate()
 
         # position correction for now since you can just 0f through the wall when dashing
         if self.pos.x > WIDTH-TILESIZE:
@@ -252,16 +258,13 @@ class Player(Sprite):
         
         self.rect.center = self.pos
         
-        if self.StDash:
-            self.effects_trail()
-            self.dash()
-        elif self.StSprint:
-            self.pos.x += self.vel.x * 1.5 * self.game.dt
-            
-            # Height not affected by moving faster in x cordinates
-            self.pos.y += self.vel.y * self.game.dt
-        else:
+        # if self.StDash:
+        #     self.effects_trail()
+        #     self.dash()
+
+        if self.state_machine.current_state != "dash":
             self.pos += self.vel * self.game.dt
+        print(self.state_machine.current_state)
 
         # updating hitbox to align with sprite
         self.hit_rect.centerx = self.pos.x

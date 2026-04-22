@@ -95,11 +95,9 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
             self.dt = self.clock.tick(FPS) / 1000 # delta time in seconds 
             self.events()
 
-            if self.paused:
-                self.typecd.pause()
             if not self.paused:
                 self.update()
-            print(self.typecd.show())
+            # print(self.typecd.show())
             self.draw()
 
     def events(self):
@@ -118,6 +116,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
                     print("now")
                 if event.key == pg.K_p:
                     if self.paused:
+                        self.typecd.pause()
                         self.paused = False
                     else:
                         self.paused = True
