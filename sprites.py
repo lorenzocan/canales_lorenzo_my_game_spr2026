@@ -63,26 +63,20 @@ class Player(Sprite):
         self.vel = vec(0,0)
         self.pos = vec(x, y) * TILESIZE
         self.hit_rect = PLAYER_HITRECT
-        # self.StSprint = False
-        # self.StWalk = False
-        # self.StDash = False
-        # self.StFly = False 
 
+        self.last_update = 0
+        self.current_frame = 0
         self.state_machine = StateMachine()
         self.states: Array[State] = [PlayerFlyState(self), PlayerDashState(self)]
         self.state_machine.start_machine(self.states)
-        self.last_update = 0
-        self.current_frame = 0
+        
         self.direction = "left"
-        # self.projectile_cd = Cooldown(250)
+        self.projectile_cd = Cooldown(250)
 
-        # self.dash_slash_cd = Cooldown(2000)
+        self.dash_rect = (0,0,0,0)
+        self.is_key_locked = False
+        self.dash_slash_cd = Cooldown(2000)
         self.effect_cd = Cooldown(100)
-
-        # using cooldown object to describe a time length for the dash rather than a length of waiting
-        # self.dash_slash_length = Cooldown(300) 
-        # self.dash_slash_freeze_length = Cooldown(200)
-        # self.dash_slash_end_freeze_length = Cooldown(500) # this long to account for the 300 ticks spent dashing
 
         # self.dash_rect = pg.Rect(self.pos.x - TILESIZE, self.pos.y - TILESIZE,0,0)
         self.health = 100
@@ -93,7 +87,7 @@ class Player(Sprite):
         keys = pg.key.get_pressed()
         
         # move to main later to fix the problem of being able to hold the key
-        if self.state_machine.current_state != "dash":
+        if self.state_machine.current_state != "dash" and self.dash_slash_cd.ready():
             if keys[pg.K_LSHIFT]:
                 print(self.state_machine.current_state)
                 self.state_machine.transition("dash")
@@ -107,7 +101,7 @@ class Player(Sprite):
                 # print('p', self.rect.center)
                 print(len(self.game.all_projectiles))
         
-        if self.state_machine.current_state != "dash":
+        if not self.is_key_locked:
             if keys[pg.K_a]:
                 self.vel.x = -PLAYER_SPEED
                 self.direction = "left"
@@ -115,27 +109,21 @@ class Player(Sprite):
                 self.vel.x = PLAYER_SPEED
                 self.direction = "right"
         
-        # fly
-        if keys[pg.K_SPACE]:
-            if self.vel.y > PLAYER_FLY_VEL: # if player y vel is going downwards (positive) on the screen or not at max vel
-                self.vel.y += PLAYER_FLY_ACCEL
+            # fly
+            if keys[pg.K_SPACE]:
+                if self.vel.y > PLAYER_FLY_VEL: # if player y vel is going downwards (positive) on the screen or not at max vel
+                    self.vel.y += PLAYER_FLY_ACCEL
 
     def load_images(self):
         # list to represent each sprite in the spritesheet
-        self.idle_frames = [self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE),
+        self.fly_frames = [self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE),
                                 self.spritesheet.get_image(TILESIZE, 0, TILESIZE, TILESIZE)]
-        self.walking_frames = [self.spritesheet.get_image(0, TILESIZE, TILESIZE, TILESIZE),
-                                self.spritesheet.get_image(TILESIZE, TILESIZE, TILESIZE, TILESIZE)]
-        self.sprint_frames = [self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE),
-                                self.spritesheet.get_image(0, TILESIZE, TILESIZE, TILESIZE)]
+
         self.dash_frames = [self.spritesheet.get_image(0, TILESIZE, TILESIZE, TILESIZE),
                                 self.spritesheet.get_image(TILESIZE, TILESIZE, TILESIZE, TILESIZE)]
+        
         # removes the background in each item in the list
-        for frame in self.idle_frames:
-            frame.set_colorkey(BLACK)
-        for frame in self.walking_frames:
-            frame.set_colorkey(BLACK)
-        for frame in self.sprint_frames:
+        for frame in self.fly_frames:
             frame.set_colorkey(BLACK)
         for frame in self.dash_frames:
             frame.set_colorkey(BLACK)
@@ -146,93 +134,26 @@ class Player(Sprite):
 
     def animate(self):
         now = pg.time.get_ticks()
-        if not self.StSprint and not self.StWalk and not self.StDash: # self.jumping and self.walking are just theoretical states the player could be in for now
+
+        if self.state_machine.current_state.get_state_name() == "fly":
             if now - self.last_update > 500:
                 self.last_update = now # this is basically 'restarting' the timer but the numbers are relative to the value of now
-                self.current_frame = (self.current_frame + 1) % len(self.idle_frames) # makes current_frame += 1, but if it is the last item in list, current_frame = 0
+                self.current_frame = (self.current_frame + 1) % len(self.fly_frames) # makes current_frame += 1, but if it is the last item in list, current_frame = 0
                 bottom = self.rect.bottom
-                self.image = self.idle_frames[self.current_frame] # updates image using the new value for self.current_frame
-                self.rect = self.image.get_rect() # I think this is necessary for coordinates?
+                self.image = self.fly_frames[self.current_frame] # updates image using the new value for self.current_frame
+                self.rect = self.image.get_rect() # this is necessary to know the coordinates of the sprite
                 self.rect.bottom = bottom
-        elif self.StDash:
-            if now - self.last_update > 50:
-                self.last_update = now
-                self.current_frame = (self.current_frame + 1) % len(self.dash_frames)
-                bottom = self.rect.bottom
-                self.image = self.dash_frames[self.current_frame]
-                self.rect = self.image.get_rect()
-                self.rect.bottom = bottom
-        elif self.StWalk:
+        elif self.state_machine.current_state.get_state_name() == "dash":
             if now - self.last_update > 500:
-                self.last_update = now
-                self.current_frame = (self.current_frame + 1) % len(self.walking_frames)
+                self.last_update = now # this is basically 'restarting' the timer but the numbers are relative to the value of now
+                self.current_frame = (self.current_frame + 1) % len(self.dash_frames) # makes current_frame += 1, but if it is the last item in list, current_frame = 0
                 bottom = self.rect.bottom
-                self.image = self.walking_frames[self.current_frame]
-                self.rect = self.image.get_rect()
+                self.image = self.dash_frames[self.current_frame] # updates image using the new value for self.current_frame
+                self.rect = self.image.get_rect() # this is necessary to know the coordinates of the sprite
                 self.rect.bottom = bottom
-        elif self.StSprint:
-            if now - self.last_update > 250:
-                self.last_update = now
-                self.current_frame = (self.current_frame + 1) % len(self.walking_frames)
-                bottom = self.rect.bottom
-                self.image = self.walking_frames[self.current_frame]
-                self.rect = self.image.get_rect()
-                self.rect.bottom = bottom
-
-    # basic method to "change" the state of the player at a given point in time
-    def state(self):
-        keys = pg.key.get_pressed()
-
-        # dashing -- this will definitely be moved back to get keys once i fugre out the state machine whenever
-        if keys[pg.K_LSHIFT]:
-            if self.dash_slash_cd.ready():
-                self.dash_slash_cd.start()
-
-                # starting timers to stop an action after a time period
-                self.dash_slash_length.start()
-                self.dash_slash_freeze_length.start()
-                self.dash_slash_end_freeze_length.start()
-
-                self.StDash = True
-                self.StSprint = False
-                self.StWalk = False
-    
-        elif keys[pg.K_RSHIFT] and self.vel.x != 0 and not self.StDash:
-            self.StSprint = True
-            self.StWalk = False
-        elif self.vel.x != 0 and not self.StDash:
-            self.StWalk = True
-            self.StSprint = False
-        else:
-            self.StWalk = False
-            self.StSprint = False
 
     def state_check(self):
         pass
-
-    def dash(self):
-        if self.dash_slash_freeze_length.ready(): # after freeze time is done, do the moving
-
-            # if the dash time is in between the end of end dash freeze and the end of dash length, do not do anything
-            if not self.dash_slash_end_freeze_length.ready() and self.dash_slash_length.ready():
-                pass
-
-            elif not self.dash_slash_length.ready(): # without this, movement happens as soon as everything ends
-                # check most recent direction to fix the direction of dash
-                if self.direction == "left" and not self.dash_slash_length.ready():
-                    self.pos.x -= PLAYER_SPEED * self.game.dt * 12
-                else:
-                    self.pos.x += PLAYER_SPEED * self.game.dt * 12
-                
-                # dash hitbox moves along with player during the duration of the dash
-                self.dash_rect = pg.Rect(self.pos.x - TILESIZE, self.pos.y - TILESIZE, TILESIZE * 2, TILESIZE * 2)
-        
-        # stop calling this function once dash is over (because StDash is False)
-        if self.dash_slash_end_freeze_length.ready():
-            self.StDash = False
-            self.vel.x = 0
-            # ensures hitbox won't take up space to affect enemy health only when dashing
-            self.dash_rect = pg.Rect(self.pos.x - TILESIZE, self.pos.y - TILESIZE,0,0)
 
     def collide_with_stuff(self, group, kill):
         hits = pg.sprite.spritecollide(self, group, kill)
@@ -245,7 +166,6 @@ class Player(Sprite):
         self.get_keys()
         gravity(self)
         self.state_check()
-        # self.state()
         # self.animate()
 
         # position correction for now since you can just 0f through the wall when dashing
@@ -256,16 +176,14 @@ class Player(Sprite):
             self.pos.x = TILESIZE
             self.StDash = False
         
-        self.rect.center = self.pos
-        
         # if self.StDash:
         #     self.effects_trail()
-        #     self.dash()
 
-        if self.state_machine.current_state != "dash":
+        if not self.is_key_locked:
             self.pos += self.vel * self.game.dt
-        print(self.state_machine.current_state)
 
+        self.rect.center = self.pos
+        
         # updating hitbox to align with sprite
         self.hit_rect.centerx = self.pos.x
         collide_with_walls(self, self.game.all_walls, 'x')
@@ -297,7 +215,7 @@ class Mob(Sprite):
         gravity(self)
         self.rect.center = self.pos
 
-        if self.game.player.StDash: # reduce health when in the hitbox of player slash
+        if self.game.player.is_key_locked: # reduce health when in the hitbox of player slash
             if self.hit_rect.colliderect(self.game.player.dash_rect):
                 self.health -= 10
                 print(self.health)
@@ -312,8 +230,6 @@ class Mob(Sprite):
         self.rect.center = self.hit_rect.center
 
  
-
-    
 class Wall(Sprite):
     def __init__(self, game, x, y):
         self.groups = game.all_sprites, game.all_walls # adding an all_walls group to be able to dileniate between an entity and a wall
@@ -399,6 +315,7 @@ class Boss(Sprite):
         self.rect.center = self.hit_rect.center
 
         gravity(self)
+
 
 class EffectTrail(Sprite):
     def __init__(self, game, x, y, sprite):
