@@ -50,7 +50,6 @@ class PlayerDashState(State):
         self.player.is_key_locked = False
         self.player.vel.x = 0
 
-
     def update(self):
         self.player.animate()
         # print('updating player dash state...')

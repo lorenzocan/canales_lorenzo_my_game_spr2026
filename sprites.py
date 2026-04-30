@@ -7,6 +7,7 @@ from math import sqrt
 from state_machine import *
 from ctypes import Array
 from player_states import *
+from xerxes_states import *
 
 vec = pg.math.Vector2
 
@@ -93,10 +94,10 @@ class Player(Sprite):
                 self.state_machine.transition("dash")
                 print(12321313)
 
-        if keys[pg.K_f]:
+        if keys[pg.MOUSEBUTTONDOWN]:
             if self.projectile_cd.ready():
                 self.projectile_cd.start() # resetting cooldown so that it's not a one time thing
-                p = Projectile(self.game, self.rect.x, self.rect.y)
+                p = Projectile(self.game, self.rect.x, self.rect.y, pg.MOUSEBUTTONDOWN.pos)
                 # print('p', self.pos)
                 # print('p', self.rect.center)
                 print(len(self.game.all_projectiles))
@@ -117,10 +118,10 @@ class Player(Sprite):
     def load_images(self):
         # list to represent each sprite in the spritesheet
         self.fly_frames = [self.spritesheet.get_image(0, 0, TILESIZE, TILESIZE),
-                                self.spritesheet.get_image(TILESIZE, 0, TILESIZE, TILESIZE)]
+                            self.spritesheet.get_image(TILESIZE, 0, TILESIZE, TILESIZE)]
 
         self.dash_frames = [self.spritesheet.get_image(0, TILESIZE, TILESIZE, TILESIZE),
-                                self.spritesheet.get_image(TILESIZE, TILESIZE, TILESIZE, TILESIZE)]
+                            self.spritesheet.get_image(TILESIZE, TILESIZE, TILESIZE, TILESIZE)]
         
         # removes the background in each item in the list
         for frame in self.fly_frames:
@@ -166,7 +167,6 @@ class Player(Sprite):
         self.get_keys()
         gravity(self)
         self.state_check()
-        # self.animate()
 
         # position correction for now since you can just 0f through the wall when dashing
         if self.pos.x > WIDTH-TILESIZE:
@@ -176,9 +176,6 @@ class Player(Sprite):
             self.pos.x = TILESIZE
             self.StDash = False
         
-        # if self.StDash:
-        #     self.effects_trail()
-
         if not self.is_key_locked:
             self.pos += self.vel * self.game.dt
 
@@ -263,7 +260,7 @@ class Coin(Sprite):
 
 # Current Issue: first instance of projectile spawnws at (0,0)
 class Projectile(Sprite):
-    def __init__(self, game, x, y):
+    def __init__(self, game, x, y, mouse_pos):
         self.groups = game.all_sprites, game.all_projectiles
         Sprite.__init__(self, self.groups)
         self.game = game
@@ -287,35 +284,6 @@ class Projectile(Sprite):
         self.rect.centerx = self.pos.x + TILESIZE/2
         collide_with_walls(self, self.game.all_walls, 'y')
         self.rect.centery = self.pos.y + TILESIZE/2
-
-# Intended to be a superclass used by different bosses
-class Boss(Sprite):
-    def __init__(self, game, x, y, health, damage, speed, size, weight):
-        self.groups = game.all_sprites
-        Sprite.__init__(self, self.groups)
-        self.game = game
-        self.image = pg.Surface((TILESIZE * size, TILESIZE * size))
-        self.image.fill(RED)
-        self.rect = self.image.get_rect()
-        self.vel = vec(0,0)
-        self.pos = vec(x, y) * TILESIZE
-        self.speed = speed
-        self.hp = health
-        self.attack_damage = damage
-        self.accel_multiplier = weight
-        self.hit_rect = self.image.get_rect()
-
-    def update(self):
-        self.rect.center = self.pos
-        
-        self.hit_rect.centerx = self.pos.x
-        collide_with_walls(self, self.game.all_walls, 'x')
-        self.hit_rect.centerx = self.pos.y
-        collide_with_walls(self, self.game.all_walls, 'y')
-        self.rect.center = self.hit_rect.center
-
-        gravity(self)
-
 
 class EffectTrail(Sprite):
     def __init__(self, game, x, y, sprite):
@@ -353,3 +321,27 @@ class EffectTrail(Sprite):
             # adjusts to new scaling
             self.rect.x += 1
             self.rect.y += 1
+
+
+
+class Xerxes(Sprite):
+    def __init__(self, game, x, y):
+        self.groups = game.all_sprites
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image.fill(CYAN)
+        self.rect = self.image.get_rect()
+        self.vel = vec(0,0)
+        self.pos = vec(x, y) * TILESIZE
+
+        self.hit_rect = XERXES_HITRECT.copy()
+        self.health = 500
+        self.max_health = 500
+
+        self.states: Array[State] = Array[XerxesProjectileState(self), XerxesMovingState(self), XerxesStunState(self)]
+        self.state_machine = StateMachine()
+
+
+    def update(self):
+        pass

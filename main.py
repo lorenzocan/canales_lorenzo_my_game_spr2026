@@ -11,7 +11,9 @@ from random import *
 from settings import *
 from sprites import *
 from utils import *
-
+from ctypes import Array
+from state_machine import *
+from game_states import *
 
 # the game class that will be instantiated in order to run the game
 class Game: # the pen factory-the outline of the game-instances of the pen arent the factory itself!!!
@@ -23,11 +25,14 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         pg.display.set_caption(TITLE)
         self.clock = pg.time.Clock()
         self.running = True
-        self.playing = True
+        self.playing = False
         self.paused = False
         self.game_cooldown = Cooldown(3000)
         self.current_level = 1
         self.levels = ["LevelSelect","level1.txt","level2.txt"]
+        # self.state_machine = StateMachine()
+        # self.states: Array[State] = [LevelSelect(self), Playing(self)]
+        # self.state_machine.start_machine(self.states)
 
         self.freeze_time = 0
         self.typecd = Cooldown(2000)
@@ -97,7 +102,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
 
             if not self.paused:
                 self.update()
-            # print(self.typecd.show())
+            # if self.state_machine.get_state_name() == "Playing":
             self.draw()
 
     def events(self):
@@ -122,8 +127,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
                         self.paused = True
 
     def quit(self):
-        if self.playing:
-            self.playing = False
+        self.playing = False
         self.running = False
 
     def update(self):
@@ -159,7 +163,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         self.draw_text("FRAGMENT", 50, WHITE, WIDTH/2, HEIGHT/2)
         pg.display.flip() # basically drawing the stuff
         self.wait_for_key()
-    
+
     # while loop that stops itself upon key press
     def wait_for_key(self):
         waiting = True
@@ -170,7 +174,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
                     self.quit()
                     self.running = False
                 if event.type == pg.KEYDOWN:
-                    waiting = False
+                    self.waiting = False
 
 
 # makes sure you are calling Game from main.py
@@ -180,6 +184,7 @@ if __name__ == "__main__":
 g.show_start_screen()
 
 while g.running: # upon instantiation the game which will set self.running() to True
+    # g.state_machine.transition("Playing")
     g.new()
 
 g.quit

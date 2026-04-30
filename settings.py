@@ -20,6 +20,8 @@ PROJ_SPEED = 540
 
 STANDARD_MAX_YVEL = 768
 
+XERXES_HITRECT = pg.Rect(0,0, TILESIZE*2, TILESIZE*2)
+
 # Colour
 # a tuple that represents an rgb value
 BLUE = (0, 0, 255)
@@ -30,3 +32,4 @@ YELLOW = (255, 255, 0)
 CYAN = (0, 255, 255)
 MAGENTA = (255, 0, 255)
 BLACK = (0, 0, 0)
+LEVEL_SELECT_GREEN = (88, 136, 82)
