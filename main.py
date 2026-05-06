@@ -30,9 +30,9 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         self.game_cooldown = Cooldown(3000)
         self.current_level = 1
         self.levels = ["LevelSelect","level1.txt","level2.txt"]
-        # self.state_machine = StateMachine()
-        # self.states: Array[State] = [LevelSelect(self), Playing(self)]
-        # self.state_machine.start_machine(self.states)
+        self.state_machine = StateMachine()
+        self.states: Array[State] = [Start(self), LevelSelect(self), Playing(self)]
+        self.state_machine.start_machine(self.states)
 
         self.freeze_time = 0
         self.typecd = Cooldown(2000)
@@ -110,21 +110,21 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         for event in pg.event.get(): # to interate through every event
             if event.type == pg.QUIT:
                 self.quit()
-            if event.type == pg.MOUSEBUTTONDOWN:
-                print("mouse input")
-                print(event.pos)
+            # if event.type == pg.MOUSEBUTTONDOWN:
+            #     print("mouse input")
+            #     print(event.pos)
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_q:
                     self.quit()
                 if event.key == pg.K_c and self.typecd.ready() and not self.paused:
                     self.typecd.start()
                     print("now")
-                if event.key == pg.K_p:
-                    if self.paused:
-                        self.typecd.pause()
-                        self.paused = False
-                    else:
-                        self.paused = True
+                # if event.key == pg.K_p:
+                #     if self.paused:
+                #         self.typecd.pause()
+                #         self.paused = False
+                #     else:
+                #         self.paused = True
 
     def quit(self):
         self.playing = False
@@ -136,20 +136,48 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
             self.next_level(self.levels[self.current_level+1])
 
     def draw(self): # method that is responsible for displaying everything on the screen
-        self.screen.fill(BLUE)
-        self.draw_text("Hello World", 24, WHITE, WIDTH/2, TILESIZE)
-        self.draw_text(str(self.dt), 24, WHITE, WIDTH/2, HEIGHT/4)
-        self.draw_text(str(self.game_cooldown.ready()), 24, WHITE, WIDTH/2, HEIGHT/3)
-        self.draw_text(str(self.player.pos), 24, WHITE, WIDTH/2, HEIGHT-TILESIZE*3)
+        game_state = self.state_machine.current_state.get_state_name()
 
-        if self.paused:
+        if game_state == "Start":
+            self.show_start_screen()
+
+        if game_state == "LevelSelect":
+            self.selections = pg.sprite.Group()
+            self.screen.fill(LEVEL_SELECT_GREEN)
+            self.draw_text("CHOOSE", 32, WHITE, WIDTH/2, HEIGHT/4)
+
+            Selections(self)
+            
+            self.selections.update()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        if game_state == "Playing":
+            self.screen.fill(BLUE)
+            self.draw_text("Hello World", 24, WHITE, WIDTH/2, TILESIZE)
+            self.draw_text(str(self.dt), 24, WHITE, WIDTH/2, HEIGHT/4)
+            self.draw_text(str(self.game_cooldown.ready()), 24, WHITE, WIDTH/2, HEIGHT/3)
+            self.draw_text(str(self.player.pos), 24, WHITE, WIDTH/2, HEIGHT-TILESIZE*3)
+
+            self.all_sprites.draw(self.screen) # draws all sprites (walls, mobs, players, etc)
+            # draw_health_bar(self.screen, 10, 10, self.player.health)
+
+        if game_state == "Paused":
             self.draw_text("PAUSED", 100, WHITE, WIDTH/2, HEIGHT/2)
 
-        self.all_sprites.draw(self.screen) # draws all sprites (walls, mobs, players, etc)
-        # draw_health_bar(self.screen, 10, 10, self.player.health)
-
         pg.display.flip() # display the images and text on screen
-        
+    
     def draw_text(self, text, size, color, x, y):
         font_name = pg.font.match_font('arial')
         font = pg.font.Font(font_name, size)
@@ -164,27 +192,22 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         pg.display.flip() # basically drawing the stuff
         self.wait_for_key()
 
-    # while loop that stops itself upon key press
+    # while loop (from constant self.draw()) that stops itself upon key press
     def wait_for_key(self):
-        waiting = True
-        while waiting:
-            self.clock.tick(FPS)
-            for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    self.quit()
-                    self.running = False
-                if event.type == pg.KEYDOWN:
-                    self.waiting = False
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                self.quit()
+                self.running = False
+            if event.type == pg.KEYDOWN or event.type == pg.MOUSEBUTTONDOWN:
+                self.state_machine.transition("LevelSelect")
+
 
 
 # makes sure you are calling Game from main.py
 if __name__ == "__main__":
     g = Game() # instantiates game upon running the code
 
-g.show_start_screen()
-
 while g.running: # upon instantiation the game which will set self.running() to True
-    # g.state_machine.transition("Playing")
     g.new()
 
 g.quit

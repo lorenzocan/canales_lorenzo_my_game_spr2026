@@ -6,9 +6,10 @@ import pygame as pg
 class Start(State):
     def __init__(self, game):
         self.game = game
-
+    
     def enter(self):
         self.game.playing = False
+        self.game.paused = True
 
     def exit(self):
         pass
@@ -25,6 +26,8 @@ class LevelSelect(State):
 
     def enter(self):
         self.game.screen.fill(LEVEL_SELECT_GREEN)
+        self.game.paused = True
+        self.game.playing = False
 
     def exit(self):
         pass
@@ -40,7 +43,8 @@ class Playing(State):
         self.game = game
     
     def enter(self):
-        pass
+        self.game.paused = False
+        self.game.playing = True
 
     def exit(self):
         pass
@@ -49,4 +53,21 @@ class Playing(State):
         pass
 
     def get_state_name(self):
-        return "LevelSelect"
+        return "Playing"
+
+class Paused(State):
+    def __init__(self, game):
+        self.game = game
+    
+    def enter(self):
+        self.game.paused = True
+        self.game.playing = False
+
+    def exit(self):
+        pass
+
+    def update(self):
+        pass
+
+    def get_state_name(self):
+        return "Paused"

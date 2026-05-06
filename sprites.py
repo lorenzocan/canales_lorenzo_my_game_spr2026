@@ -51,7 +51,6 @@ def gravity(sprite, terminal_yvel = STANDARD_MAX_YVEL, accel_multiplier = 1):
     if terminal_yvel > sprite.vel.y:
         sprite.vel.y += TILESIZE * accel_multiplier
         
-
 class Player(Sprite):
     def __init__(self, game, x, y):
         self.groups = game.all_sprites
@@ -190,7 +189,6 @@ class Player(Sprite):
         # updating sprite to align with moved hitbox
         self.rect.center = self.hit_rect.center
 
-
 class Mob(Sprite):
     def __init__(self, game, x, y):
         self.groups = game.all_sprites, game.all_mobs
@@ -226,7 +224,6 @@ class Mob(Sprite):
 
         self.rect.center = self.hit_rect.center
 
- 
 class Wall(Sprite):
     def __init__(self, game, x, y):
         self.groups = game.all_sprites, game.all_walls # adding an all_walls group to be able to dileniate between an entity and a wall
@@ -242,7 +239,6 @@ class Wall(Sprite):
     def update(self):
         # kill projectile
         pg.sprite.spritecollide(self, self.game.all_projectiles, True)
-
 
 class Coin(Sprite):
     def __init__(self, game, x, y):
@@ -324,6 +320,49 @@ class EffectTrail(Sprite):
 
 
 
+
+
+
+
+
+# Menu
+class Selections(Sprite):
+    def __init__(self, game, level_number=0):
+        self.group = game.selections
+        Sprite.__init__(self, self.group)
+        self.game = game
+
+        width = SELECT_X_OFFSET + level_number*TILESIZE
+        height = SELECT_Y_OFFSET
+        """
+        height will compare offset x and the width of the entire screen
+        and when they are at a certain number or something then height will go up TILESIZE * 2
+        """
+        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image.fill(YELLOW)
+        self.rect = self.image.get_rect()
+
+        self.pos = vec(width, height)
+        self.rect.center = self.pos +(TILESIZE/2, TILESIZE/2)
+
+        print("instantiated")
+    def update(self):
+        self.pos = self.rect.center
+        if self.game.state_machine.current_state.get_state_name() != "LevelSelect":
+            self.kill()
+        
+        
+
+
+
+
+
+
+
+
+
+
+# Bosses
 class Xerxes(Sprite):
     def __init__(self, game, x, y):
         self.groups = game.all_sprites

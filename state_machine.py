@@ -1,7 +1,5 @@
 is_log_enabled: bool = False
 
-# wow i do not understand anything here lol
-
 # object that can exit, enter, change, and get the name of the state
 class State():
     def __init__(self):
@@ -26,9 +24,9 @@ class StateMachine():
         for state in init_states:
             print(state.get_state_name())
             self.states[state.get_state_name()] = state
-            print(self.states)
+            # print(self.states)
 
-        self.current_state = init_states[0]
+        self.current_state = init_states[0] # first state in the list of states will be the starting state
 
         if is_log_enabled:
             print('starting state machine')
@@ -36,7 +34,7 @@ class StateMachine():
         self.current_state.enter()
         print("state machine started with state:", self.current_state.get_state_name())
 
-    # comment comment comment
+    # updates each object that is related to states (e.g. calls the update method in something like PlayerDashState)
     def update(self):
         if self.current_state == None:
             print('no current state')
@@ -49,7 +47,7 @@ class StateMachine():
         if new_state == None:
             print("attempting to transition to non existent state")
         elif new_state != self.current_state:
-            self.current_state.exit()
+            self.current_state.exit() # calls exit method on the object that is mentioned
             
             if is_log_enabled:
                 print('exiting state')
@@ -59,7 +57,7 @@ class StateMachine():
             if is_log_enabled:
                 print('entering new state')
 
-            self.current_state.enter()
+            self.current_state.enter() # calls enter method on a different object, the one that is transitioned to
         else:
             if is_log_enabled:
                 print(f"attempt to transition to {new_state_name} ignored since it is the current state")
