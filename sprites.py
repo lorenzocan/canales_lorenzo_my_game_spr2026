@@ -325,31 +325,40 @@ class EffectTrail(Sprite):
 
 
 
-# Menu
+# Level Select
 class Selections(Sprite):
     def __init__(self, game, level_number=0):
-        self.group = game.selections
-        Sprite.__init__(self, self.group)
+        self.groups = game.selections
+        Sprite.__init__(self, self.groups)
         self.game = game
 
         width = SELECT_X_OFFSET + level_number*TILESIZE
-        height = SELECT_Y_OFFSET
+        height = SELECT_Y_OFFSET 
         """
         height will compare offset x and the width of the entire screen
         and when they are at a certain number or something then height will go up TILESIZE * 2
         """
         self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(YELLOW)
+        self.image.fill(YELLOW) 
         self.rect = self.image.get_rect()
 
         self.pos = vec(width, height)
         self.rect.center = self.pos +(TILESIZE/2, TILESIZE/2)
 
-        print("instantiated")
+        # print("instantiated")
     def update(self):
         self.pos = self.rect.center
+
         if self.game.state_machine.current_state.get_state_name() != "LevelSelect":
             self.kill()
+        
+        # checking how close the distance btwn mouse selection square is, if close enough, highlight or something idk
+        collision_bound = tuple(abs(a-b) for a,b in zip(pg.mouse.get_pos(), self.pos))
+        # zip stores the tuples of mouse pos and sel.pos
+        # gets the first value of each tuple, gets absval of the difference, then makes it the first value of the new tuple, etc.
+
+        if collision_bound <= (TILESIZE, TILESIZE):
+            print("colliding rn")
         
         
 

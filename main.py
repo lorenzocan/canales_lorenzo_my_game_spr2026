@@ -78,6 +78,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         self.all_mobs = pg.sprite.Group()
         self.all_collectables = pg.sprite.Group()
         self.all_projectiles = pg.sprite.Group()
+        self.selections = pg.sprite.Group()
 
         # nested for loop to display each sprite to its respective position in level1.text
         for row, tiles in enumerate(self.map.data):
@@ -100,8 +101,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
             self.dt = self.clock.tick(FPS) / 1000 # delta time in seconds 
             self.events()
 
-            if not self.paused:
-                self.update()
+            self.update()
             # if self.state_machine.get_state_name() == "Playing":
             self.draw()
 
@@ -131,37 +131,16 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         self.running = False
 
     def update(self):
-        self.all_sprites.update() # using the update method for all sprites under the group 'all_sprites'
+        self.state_machine.update()
         if len(self.all_projectiles) >= 1:
             self.next_level(self.levels[self.current_level+1])
+        
 
     def draw(self): # method that is responsible for displaying everything on the screen
         game_state = self.state_machine.current_state.get_state_name()
 
         if game_state == "Start":
             self.show_start_screen()
-
-        if game_state == "LevelSelect":
-            self.selections = pg.sprite.Group()
-            self.screen.fill(LEVEL_SELECT_GREEN)
-            self.draw_text("CHOOSE", 32, WHITE, WIDTH/2, HEIGHT/4)
-
-            Selections(self)
-            
-            self.selections.update()
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         if game_state == "Playing":
             self.screen.fill(BLUE)

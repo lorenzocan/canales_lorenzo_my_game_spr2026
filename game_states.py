@@ -1,5 +1,6 @@
 from settings import *
 from utils import *
+from sprites import Selections
 from state_machine import State
 import pygame as pg
 
@@ -26,6 +27,7 @@ class LevelSelect(State):
 
     def enter(self):
         self.game.screen.fill(LEVEL_SELECT_GREEN)
+        self.game.draw_text("CHOOSE", 32, WHITE, WIDTH/2, HEIGHT/4)
         self.game.paused = True
         self.game.playing = False
 
@@ -33,7 +35,9 @@ class LevelSelect(State):
         pass
 
     def update(self):
-        pass
+        # self.game.draw_text("CHOOSE", 32, WHITE, WIDTH/2, HEIGHT/4)
+        Selections(self.game)
+        self.game.selections.update()
 
     def get_state_name(self):
         return "LevelSelect"
@@ -50,7 +54,7 @@ class Playing(State):
         pass
 
     def update(self):
-        pass
+        self.game.all_sprites.update() # using the update method for all sprites under the group in main 'all_sprites'
 
     def get_state_name(self):
         return "Playing"

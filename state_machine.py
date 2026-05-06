@@ -1,6 +1,7 @@
 is_log_enabled: bool = False
 
 # object that can exit, enter, change, and get the name of the state
+# a lot of passes b/c this is a superclass for states which will be the ones that define them
 class State():
     def __init__(self):
         self.state = ""
