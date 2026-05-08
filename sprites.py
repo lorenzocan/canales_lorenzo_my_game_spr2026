@@ -332,6 +332,7 @@ class Selections(Sprite):
         Sprite.__init__(self, self.groups)
         self.game = game
         self.num = level_number
+        self.isclick = False
 
         self.width = SELECT_X_OFFSET + self.num*TILESIZE*4
         self.height = SELECT_Y_OFFSET 
@@ -348,22 +349,36 @@ class Selections(Sprite):
 
         self.game.draw_text(str(self.num), 12, BLACK, self.width, self.height)
         # print("instantiated")
-    def update(self):
-        self.pos = self.rect.center
 
+
+    def clicking(self):
+        """
+        this is not done bruhh
+        """
+        for event in pg.event.get():
+            if event.type == pg.MOUSEBUTTONDOWN:
+                return True
+        print("IM BEING CALLED")
+
+    def update(self):
         if self.game.state_machine.current_state.get_state_name() != "LevelSelect":
             self.kill()
         
-        # checking how close the distance btwn mouse selection square is, if close enough, highlight or something idk
+        self.pos = self.rect.center
+        
+        # checking how close the distance btwn mouse selection square is
         collision_bound = tuple(abs(a-b) for a,b in zip(pg.mouse.get_pos(), self.pos))
         # zip stores the tuples of mouse pos and sel.pos
         # gets the first value of each tuple, gets absval of the difference, then makes it the first value of the new tuple, etc.
 
+        # i am indexing this b/c i dont know how to do tuple inequalities
         if collision_bound[0] <= TILESIZE and collision_bound[1] <= TILESIZE:
             self.image.fill(YELLOW)
+            self.game.current_level = self.num
+            if self.clicking():
+                self.game.state_machine.transition("Playing")
         else:
             self.image.fill(WHITE)
-        
         self.game.draw_text(str(self.num+1), TILESIZE, BLACK, self.width, self.height-TILESIZE/2)
         
         

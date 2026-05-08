@@ -28,15 +28,17 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         self.playing = False
         self.paused = False
         self.game_cooldown = Cooldown(3000)
-        self.current_level = 1
+        self.current_level = 0
         self.levels = ["level1.txt","level2.txt"]
         self.state_machine = StateMachine()
         self.states: Array[State] = [Start(self), LevelSelect(self), Playing(self)]
         self.state_machine.start_machine(self.states)
 
+        self.select_isclick = False
+
         self.freeze_time = 0
         self.typecd = Cooldown(2000)
-    
+        
     # a method is a function tied to a Class
     def load_data(self, map):
         self.game_dir = path.dirname(__file__) # '__file__' is representative of this whole file - self.game_dir is set to all files in my_game
@@ -70,7 +72,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
                     Coin(self, col + 0.5, row + 0.5)
     
     def new(self):
-        self.load_data(self.levels[1])
+        self.load_data(self.levels[self.current_level])
 
         # groups that objects in the sprite module will call on
         self.all_sprites = pg.sprite.Group()
@@ -100,13 +102,12 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         while self.running:
             self.dt = self.clock.tick(FPS) / 1000 # delta time in seconds 
             self.events()
-
             self.update()
-            # if self.state_machine.get_state_name() == "Playing":
             self.draw()
 
     def events(self):
         # stuff that happens with peripherals - keyboard, mouse, camera, microphone, joystick, controller, touchscreen, stylus, trackpad
+        game_state = self.state_machine.current_state.get_state_name()
         for event in pg.event.get(): # to interate through every event
             if event.type == pg.QUIT:
                 self.quit()
@@ -116,8 +117,10 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
                 if event.key == pg.K_c and self.typecd.ready() and not self.paused:
                     self.typecd.start()
                     print("now")
-                if self.state_machine.current_state.get_state_name() == "Start":
+                if game_state == "Start":
                         self.state_machine.transition("LevelSelect")
+            if event.type == pg.MOUSEBUTTONDOWN:
+                pass
 
     def quit(self):
         self.playing = False
@@ -125,14 +128,14 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
 
     def update(self):
         self.state_machine.update()
-        if len(self.all_projectiles) >= 1:
-            self.next_level(self.levels[self.current_level+1])
         
     def draw(self): # method that is responsible for displaying everything on the screen
         game_state = self.state_machine.current_state.get_state_name()
 
         if game_state == "Start":
-            self.show_start_screen()
+            self.screen.fill(BLACK)
+            self.draw_text("FRAGMENT", 50, WHITE, WIDTH/2, HEIGHT/2.5)
+            self.draw_text("press any key to start", 25, WHITE, WIDTH/2, HEIGHT/2)
 
         if game_state == "Playing":
             self.screen.fill(BLUE)
@@ -157,10 +160,6 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         text_rect.midtop = (x,y)
         self.screen.blit(text_surface, text_rect)
 
-    def show_start_screen(self):
-        self.screen.fill(BLACK)
-        self.draw_text("FRAGMENT", 50, WHITE, WIDTH/2, HEIGHT/2)
-        pg.display.flip() # basically drawing the stuff
 
 
 
