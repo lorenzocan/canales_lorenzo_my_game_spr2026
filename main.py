@@ -29,7 +29,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         self.paused = False
         self.game_cooldown = Cooldown(3000)
         self.current_level = 1
-        self.levels = ["LevelSelect","level1.txt","level2.txt"]
+        self.levels = ["level1.txt","level2.txt"]
         self.state_machine = StateMachine()
         self.states: Array[State] = [Start(self), LevelSelect(self), Playing(self)]
         self.state_machine.start_machine(self.states)
@@ -110,21 +110,14 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         for event in pg.event.get(): # to interate through every event
             if event.type == pg.QUIT:
                 self.quit()
-            # if event.type == pg.MOUSEBUTTONDOWN:
-            #     print("mouse input")
-            #     print(event.pos)
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_q:
                     self.quit()
                 if event.key == pg.K_c and self.typecd.ready() and not self.paused:
                     self.typecd.start()
                     print("now")
-                # if event.key == pg.K_p:
-                #     if self.paused:
-                #         self.typecd.pause()
-                #         self.paused = False
-                #     else:
-                #         self.paused = True
+                if self.state_machine.current_state.get_state_name() == "Start":
+                        self.state_machine.transition("LevelSelect")
 
     def quit(self):
         self.playing = False
@@ -135,7 +128,6 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         if len(self.all_projectiles) >= 1:
             self.next_level(self.levels[self.current_level+1])
         
-
     def draw(self): # method that is responsible for displaying everything on the screen
         game_state = self.state_machine.current_state.get_state_name()
 
@@ -169,16 +161,6 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         self.screen.fill(BLACK)
         self.draw_text("FRAGMENT", 50, WHITE, WIDTH/2, HEIGHT/2)
         pg.display.flip() # basically drawing the stuff
-        self.wait_for_key()
-
-    # while loop (from constant self.draw()) that stops itself upon key press
-    def wait_for_key(self):
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
-                self.quit()
-                self.running = False
-            if event.type == pg.KEYDOWN or event.type == pg.MOUSEBUTTONDOWN:
-                self.state_machine.transition("LevelSelect")
 
 
 

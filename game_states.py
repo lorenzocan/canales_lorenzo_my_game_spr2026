@@ -27,16 +27,18 @@ class LevelSelect(State):
 
     def enter(self):
         self.game.screen.fill(LEVEL_SELECT_GREEN)
-        self.game.draw_text("CHOOSE", 32, WHITE, WIDTH/2, HEIGHT/4)
+        self.game.draw_text("CHOOSE", 32, WHITE, WIDTH/2, HEIGHT/8)
         self.game.paused = True
         self.game.playing = False
+        for i in range(len(self.game.levels)):
+            Selections(self.game, i)
 
     def exit(self):
         pass
 
     def update(self):
-        # self.game.draw_text("CHOOSE", 32, WHITE, WIDTH/2, HEIGHT/4)
-        Selections(self.game)
+
+        self.game.selections.draw(self.game.screen)
         self.game.selections.update()
 
     def get_state_name(self):

@@ -331,20 +331,22 @@ class Selections(Sprite):
         self.groups = game.selections
         Sprite.__init__(self, self.groups)
         self.game = game
+        self.num = level_number
 
-        width = SELECT_X_OFFSET + level_number*TILESIZE
-        height = SELECT_Y_OFFSET 
+        self.width = SELECT_X_OFFSET + self.num*TILESIZE*4
+        self.height = SELECT_Y_OFFSET 
         """
-        height will compare offset x and the width of the entire screen
+        future goal: height will compare offset x and the width of the entire screen
         and when they are at a certain number or something then height will go up TILESIZE * 2
         """
-        self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(YELLOW) 
+        self.image = pg.Surface((TILESIZE*2, TILESIZE*2))
+        self.image.fill(WHITE) 
         self.rect = self.image.get_rect()
 
-        self.pos = vec(width, height)
-        self.rect.center = self.pos +(TILESIZE/2, TILESIZE/2)
+        self.pos = vec(self.width, self.height)
+        self.rect.center = self.pos
 
+        self.game.draw_text(str(self.num), 12, BLACK, self.width, self.height)
         # print("instantiated")
     def update(self):
         self.pos = self.rect.center
@@ -357,8 +359,12 @@ class Selections(Sprite):
         # zip stores the tuples of mouse pos and sel.pos
         # gets the first value of each tuple, gets absval of the difference, then makes it the first value of the new tuple, etc.
 
-        if collision_bound <= (TILESIZE, TILESIZE):
-            print("colliding rn")
+        if collision_bound[0] <= TILESIZE and collision_bound[1] <= TILESIZE:
+            self.image.fill(YELLOW)
+        else:
+            self.image.fill(WHITE)
+        
+        self.game.draw_text(str(self.num+1), TILESIZE, BLACK, self.width, self.height-TILESIZE/2)
         
         
 

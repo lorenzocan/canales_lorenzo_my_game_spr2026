@@ -41,7 +41,7 @@ class StateMachine():
             print('no current state')
         else:
             self.current_state.update()
-        
+
     def transition(self, new_state_name):
         new_state: State = self.states.get(new_state_name)
         self.current_state_name = self.current_state.get_state_name()
