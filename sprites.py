@@ -3,14 +3,12 @@ from pygame.sprite import Sprite
 from settings import *
 from utils import *
 from os import path
-from math import sqrt
 from state_machine import *
 from ctypes import Array
 from player_states import *
 from xerxes_states import *
 
 vec = pg.math.Vector2
-
 
 # creating a function for wall collision instead of in a class because it will be used regularly by all the classes
 # checks for collisions between "one" and "two" using colliderect method in the pygame library (returns boolean)
@@ -332,12 +330,11 @@ class Selections(Sprite):
         Sprite.__init__(self, self.groups)
         self.game = game
         self.num = level_number
-        self.isclick = False
 
         self.width = SELECT_X_OFFSET + self.num*TILESIZE*4
         self.height = SELECT_Y_OFFSET 
         """
-        future goal: height will compare offset x and the width of the entire screen
+        potential future goal: height will compare offset x and the width of the entire screen
         and when they are at a certain number or something then height will go up TILESIZE * 2
         """
         self.image = pg.Surface((TILESIZE*2, TILESIZE*2))
@@ -348,17 +345,12 @@ class Selections(Sprite):
         self.rect.center = self.pos
 
         self.game.draw_text(str(self.num), 12, BLACK, self.width, self.height)
-        # print("instantiated")
 
-
-    def clicking(self):
-        """
-        this is not done bruhh
-        """
-        for event in pg.event.get():
-            if event.type == pg.MOUSEBUTTONDOWN:
-                return True
-        print("IM BEING CALLED")
+    # wil only be called by game upon click event
+    def click_check(self):
+        collision_bound = tuple(abs(a-b) for a,b in zip(pg.mouse.get_pos(), self.pos))
+        if collision_bound[0] <= TILESIZE and collision_bound[1] <= TILESIZE:
+            self.game.state_machine.transition("Playing")
 
     def update(self):
         if self.game.state_machine.current_state.get_state_name() != "LevelSelect":
@@ -375,8 +367,6 @@ class Selections(Sprite):
         if collision_bound[0] <= TILESIZE and collision_bound[1] <= TILESIZE:
             self.image.fill(YELLOW)
             self.game.current_level = self.num
-            if self.clicking():
-                self.game.state_machine.transition("Playing")
         else:
             self.image.fill(WHITE)
         self.game.draw_text(str(self.num+1), TILESIZE, BLACK, self.width, self.height-TILESIZE/2)
@@ -393,24 +383,79 @@ class Selections(Sprite):
 
 
 # Bosses
-class Xerxes(Sprite):
-    def __init__(self, game, x, y):
+
+# base boss object that will be used for any boss i create because i dont want to have to do this every time
+class Boss(Sprite):
+    def __init__(self, game, x, y, health, max_health, hitbox, color, height, length, states):
         self.groups = game.all_sprites
         Sprite.__init__(self, self.groups)
         self.game = game
-        self.image = pg.Surface((TILESIZE, TILESIZE))
-        self.image.fill(CYAN)
+        self.image = pg.Surface((length, height))
+        self.image.fill(color)
         self.rect = self.image.get_rect()
         self.vel = vec(0,0)
         self.pos = vec(x, y) * TILESIZE
 
-        self.hit_rect = XERXES_HITRECT.copy()
-        self.health = 500
-        self.max_health = 500
+        self.hit_rect = hitbox
+        self.health = health
+        self.max_health = max_health
 
-        self.states: Array[State] = Array[XerxesProjectileState(self), XerxesMovingState(self), XerxesStunState(self)]
+        self.rect.center = self.pos
+
+        # im so lazy lmao
         self.state_machine = StateMachine()
+        self.states: Array[State] = states
+        self.state_machine.start_machine(self.states)
+    
+    def basic_update(self):
+        self.pos += self.vel * self.game.dt
+        self.rect.center = self.pos + (TILESIZE, TILESIZE)
+    
+    
 
+class Xerxes(Boss):
+    def __init__(self, game, x, y):
+        super().__init__(game, x, y, 500, 500, XERXES_HITRECT.copy(), CYAN, TILESIZE * 2, TILESIZE * 2,
+                         [XerxesProjectileState(self), XerxesMovingState(self), XerxesStunState(self)])
+
+
+    def mode_switch(self):
+        pass
 
     def update(self):
+        self.basic_update()
+        
+        """
+        ring of projectiles, it go spin, xerxes move around with that projectiles, it does ouchie to you, 
+        end of state, shoot them away!!!!
+
+        vulnerability time! without projectiles it cant do anythign!1
+        No contact dmagea lmao you get time to hit while it moves around aimlessly!
+        then it STOPS!1!
+        repeat!
+        """
+
+class X_Proj():
+    def __init__(self, game, ref_x, ref_y, radius, angle_offset):
+        self.groups = game.all_sprites, game.all_projectiles
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        self.image = pg.Surface((12, 12))
+        
+        self.image.fill(MAGENTA)
+        self.rect = self.image.get_rect()
+        self.rect.center = self.pos + (TILESIZE/2, TILESIZE/2)
+
+        self.angle = angle_offset
+        self.vel = vec(0,0)
+
+        x = 0 # placeholder values until i figure out what to do
+        y = 0 # placeholder values until i figure out what to do
+        self.pos = vec(x,y)
+        self.hit_rect = pg.Rect(x, y, 12, 12)
+    
+    def update(self):
         pass
+        """
+        idea: get pos in polar coordinates -> update in rectangular coords
+        """

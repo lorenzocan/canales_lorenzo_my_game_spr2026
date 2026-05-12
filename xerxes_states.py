@@ -15,7 +15,6 @@ class XerxesProjectileState(State):
 
     def enter(self):
         pass
-        self.player.animate()
         print('enter player fly state')
 
     def exit(self):
@@ -24,7 +23,6 @@ class XerxesProjectileState(State):
 
     def update(self):
         pass
-        self.player.animate()
 
 class XerxesMovingState(State):
     def __init__(self, boss):
@@ -38,7 +36,6 @@ class XerxesMovingState(State):
 
     def enter(self):
         pass
-        self.player.animate()
         print('enter player fly state')
 
     def exit(self):
@@ -47,7 +44,6 @@ class XerxesMovingState(State):
 
     def update(self):
         pass
-        self.player.animate()
 
 class XerxesStunState(State):
     def __init__(self, boss):
@@ -61,7 +57,6 @@ class XerxesStunState(State):
 
     def enter(self):
         pass
-        self.player.animate()
         print('enter player fly state')
 
     def exit(self):
@@ -70,5 +65,4 @@ class XerxesStunState(State):
 
     def update(self):
         pass
-        self.player.animate()
 

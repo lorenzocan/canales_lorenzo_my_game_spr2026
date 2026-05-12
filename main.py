@@ -33,11 +33,6 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         self.state_machine = StateMachine()
         self.states: Array[State] = [Start(self), LevelSelect(self), Playing(self)]
         self.state_machine.start_machine(self.states)
-
-        self.select_isclick = False
-
-        self.freeze_time = 0
-        self.typecd = Cooldown(2000)
         
     # a method is a function tied to a Class
     def load_data(self, map):
@@ -70,6 +65,8 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
                     Mob(self, col + 0.5, row + 0.5)
                 if tile == 'C':
                     Coin(self, col + 0.5, row + 0.5)
+                if tile == "X":
+                    self.xerxes = Xerxes(self, col + 0.5, row + 0.5)
     
     def new(self):
         self.load_data(self.levels[self.current_level])
@@ -114,13 +111,15 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_q:
                     self.quit()
-                if event.key == pg.K_c and self.typecd.ready() and not self.paused:
-                    self.typecd.start()
-                    print("now")
                 if game_state == "Start":
                         self.state_machine.transition("LevelSelect")
-            if event.type == pg.MOUSEBUTTONDOWN:
-                pass
+            if event.type == pg.MOUSEBUTTONDOWN and game_state == "LevelSelect":
+                self.selections.click_check()
+                """
+                why won't this work?????????????????
+                it says the Group object has no attribute 'click_check' but it should because its a method of
+                selections ?????
+                """
 
     def quit(self):
         self.playing = False
