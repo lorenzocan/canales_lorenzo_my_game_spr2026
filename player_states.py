@@ -71,7 +71,7 @@ class PlayerDashState(State):
                 # dash hitbox moves along with player during the duration of the dash (appears only when doing the moving)
                 self.player.dash_rect = pg.Rect(self.player.pos.x - TILESIZE, self.player.pos.y - TILESIZE, TILESIZE * 2, TILESIZE * 2)
         
-        self.player.effects_trail()
+                self.player.effects_trail()
 
         # exit dash state when dash ends
         if self.dash_slash_end_freeze_length.ready():

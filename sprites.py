@@ -3,6 +3,7 @@ from pygame.sprite import Sprite
 from settings import *
 from utils import *
 from os import path
+from math import sin, cos, pi
 from state_machine import *
 from ctypes import Array
 from player_states import *
@@ -61,6 +62,7 @@ class Player(Sprite):
         self.vel = vec(0,0)
         self.pos = vec(x, y) * TILESIZE
         self.hit_rect = PLAYER_HITRECT
+        self.rect.center = self.pos
 
         self.last_update = 0
         self.current_frame = 0
@@ -150,9 +152,6 @@ class Player(Sprite):
                 self.rect = self.image.get_rect() # this is necessary to know the coordinates of the sprite
                 self.rect.bottom = bottom
 
-    def state_check(self):
-        pass
-
     def collide_with_stuff(self, group, kill):
         hits = pg.sprite.spritecollide(self, group, kill)
         if hits:
@@ -163,7 +162,6 @@ class Player(Sprite):
         self.state_machine.update()
         self.get_keys()
         gravity(self)
-        self.state_check()
 
         # position correction for now since you can just 0f through the wall when dashing
         if self.pos.x > WIDTH-TILESIZE:
@@ -213,7 +211,6 @@ class Mob(Sprite):
                 self.health -= 10
                 print(self.health)
 
-        # self.vel.x = PLAYER_SPEED
         self.pos += self.vel * self.game.dt
         
         self.hit_rect.center = self.pos
@@ -370,6 +367,7 @@ class Selections(Sprite):
         else:
             self.image.fill(WHITE)
         self.game.draw_text(str(self.num+1), TILESIZE, BLACK, self.width, self.height-TILESIZE/2)
+        self.click_check()
         
         
 
@@ -386,7 +384,7 @@ class Selections(Sprite):
 
 # base boss object that will be used for any boss i create because i dont want to have to do this every time
 class Boss(Sprite):
-    def __init__(self, game, x, y, health, max_health, hitbox, color, height, length, states):
+    def __init__(self, game, x, y, health, max_health, hitbox, color, height, length,  states):
         self.groups = game.all_sprites
         Sprite.__init__(self, self.groups)
         self.game = game
@@ -395,38 +393,59 @@ class Boss(Sprite):
         self.rect = self.image.get_rect()
         self.vel = vec(0,0)
         self.pos = vec(x, y) * TILESIZE
+        self.rect.center = self.pos
 
         self.hit_rect = hitbox
         self.health = health
         self.max_health = max_health
 
-        self.rect.center = self.pos
-
         # im so lazy lmao
         self.state_machine = StateMachine()
         self.states: Array[State] = states
         self.state_machine.start_machine(self.states)
+
+    def get_pos(self):
+        return self.pos
     
-    def basic_update(self):
+    def basic_update(self, tyvel, weight, does_gravity):
+        if does_gravity:
+            gravity(self, tyvel, weight)
+        self.rect.center = self.pos
         self.pos += self.vel * self.game.dt
-        self.rect.center = self.pos + (TILESIZE, TILESIZE)
-    
-    
+
+        self.hit_rect.center = self.pos
+
+        # had to switch order in which these values are checked because (I think)
+        # Xerxes's hitbox was big & in the ground which counted it as colliding to the sides?
+        # changing the order prevents this from happening
+        collide_with_walls(self, self.game.all_walls, 'y')
+        collide_with_walls(self, self.game.all_walls, 'x')
+        self.rect.center = self.hit_rect.center
 
 class Xerxes(Boss):
     def __init__(self, game, x, y):
         super().__init__(game, x, y, 500, 500, XERXES_HITRECT.copy(), CYAN, TILESIZE * 2, TILESIZE * 2,
                          [XerxesProjectileState(self), XerxesMovingState(self), XerxesStunState(self)])
+        self.terminal_y_vel = STANDARD_MAX_YVEL * 2
+        self.weight = 2
+        self.grav_switch: bool
+        self.vel = vec(TILESIZE, 0)
 
+        # this is just to see if they work and they do! for now...
+        for i in range(8):
+            X_Proj(self.game, x, y, TILESIZE * 3, i * pi/4, self)
 
     def mode_switch(self):
         pass
 
     def update(self):
-        self.basic_update()
-        
+        self.grav_switch = True
+        self.basic_update(self.terminal_y_vel, self.weight, self.grav_switch)
+
         """
-        ring of projectiles, it go spin, xerxes move around with that projectiles, it does ouchie to you, 
+        ring of projectiles (DONE),
+        it go spin, xerxes move around with that projectiles (DONE), 
+        it does ouchie to you, 
         end of state, shoot them away!!!!
 
         vulnerability time! without projectiles it cant do anythign!1
@@ -435,27 +454,44 @@ class Xerxes(Boss):
         repeat!
         """
 
-class X_Proj():
-    def __init__(self, game, ref_x, ref_y, radius, angle_offset):
-        self.groups = game.all_sprites, game.all_projectiles
+class X_Proj(Sprite):
+    def __init__(self, game, ref_x, ref_y, radius, angle_offset, xerxes):
+        self.groups = game.all_sprites
         Sprite.__init__(self, self.groups)
         self.game = game
-        self.image = pg.Surface((12, 12))
-        
+        self.xerxes = xerxes
+        self.image = pg.Surface((20, 20))
         self.image.fill(MAGENTA)
         self.rect = self.image.get_rect()
-        self.rect.center = self.pos + (TILESIZE/2, TILESIZE/2)
+        
+        self.r = radius
+        self.theta = angle_offset
+        self.rotate_speed = 5
 
-        self.angle = angle_offset
-        self.vel = vec(0,0)
-
-        x = 0 # placeholder values until i figure out what to do
-        y = 0 # placeholder values until i figure out what to do
+        # converting polar coordinates to rectangular coordinates
+        # translation comes last b/c things will mess up if not
+        x = self.r*cos(self.theta) + ref_x
+        y = self.r*sin(self.theta) + ref_y
         self.pos = vec(x,y)
         self.hit_rect = pg.Rect(x, y, 12, 12)
+        self.rect.center = self.pos + (6,6)
     
-    def update(self):
+    def rays(self):
         pass
         """
-        idea: get pos in polar coordinates -> update in rectangular coords
+        two parter: freeze, then shoot in a straight line
         """
+
+    def update(self):
+        hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
+        if hits:
+            # having dokill as False incase i ever want to particles
+            self.kill()
+
+        self.theta = (self.theta + (1*self.game.dt*self.rotate_speed)) % (2*pi)
+
+        self.rect.center = self.pos
+        # getting the change in x & y values from old pos to new pos after theta cahnge
+        dx = (self.r*cos(self.theta) + self.xerxes.get_pos().x) - self.pos.x
+        dy = (self.r*sin(self.theta) + self.xerxes.get_pos().y) - self.pos.y
+        self.pos += (dx, dy)

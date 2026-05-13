@@ -10,8 +10,7 @@ class XerxesProjectileState(State):
         self.name = "fly"
 
     def get_state_name(self):
-        pass
-        return "fly"
+        return "XProjecile"
 
     def enter(self):
         pass
@@ -31,8 +30,7 @@ class XerxesMovingState(State):
         self.name = "fly"
 
     def get_state_name(self):
-        pass
-        return "fly"
+        return "XMove"
 
     def enter(self):
         pass

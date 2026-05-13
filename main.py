@@ -119,6 +119,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
                 why won't this work?????????????????
                 it says the Group object has no attribute 'click_check' but it should because its a method of
                 selections ?????
+                STILL DONT UNDERSTAND WHAT IS APPENING HERE
                 """
 
     def quit(self):
