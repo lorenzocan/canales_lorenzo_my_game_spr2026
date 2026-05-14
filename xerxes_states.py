@@ -3,63 +3,79 @@ from state_machine import *
 from utils import *
 import pygame as pg
 
-class XerxesProjectileState(State):
+class XerxesStartState(State):
     def __init__(self, boss):
-        pass
         self.xerxes = boss
-        self.name = "fly"
+        self.name = "XStart"
 
     def get_state_name(self):
-        return "XProjecile"
+        return "XStart"
 
     def enter(self):
-        pass
-        print('enter player fly state')
+        for i in range(8):
+            pass
+        print('enter player XStart state')
 
     def exit(self):
         pass
-        print('exit player fly state')
+        print('exit player XStart state')
+
+    def update(self):
+        pass
+
+class XerxesProjectileState(State):
+    def __init__(self, boss):
+        self.xerxes = boss
+        self.name = "XProjectiles"
+
+    def get_state_name(self):
+        return "XProjeciles"
+
+    def enter(self):
+        pass
+        print('enter player XProjectiles state')
+
+    def exit(self):
+        pass
+        print('exit player XProjectiles state')
 
     def update(self):
         pass
 
 class XerxesMovingState(State):
     def __init__(self, boss):
-        pass
         self.xerxes = boss
-        self.name = "fly"
+        self.name = "XMove"
 
     def get_state_name(self):
         return "XMove"
 
     def enter(self):
         pass
-        print('enter player fly state')
+        print('enter player XMove state')
 
     def exit(self):
         pass
-        print('exit player fly state')
+        print('exit player XMove state')
 
     def update(self):
         pass
 
 class XerxesStunState(State):
     def __init__(self, boss):
-        pass
         self.xerxes = boss
-        self.name = "fly"
+        self.name = "XStun"
 
     def get_state_name(self):
-        pass
-        return "fly"
+        return "XStun"
 
     def enter(self):
         pass
-        print('enter player fly state')
+        print('enter player XStun state')
 
     def exit(self):
         pass
-        print('exit player fly state')
+        print('exit player XStun state')
 
     def update(self):
         pass

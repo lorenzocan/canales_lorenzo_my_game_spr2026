@@ -323,8 +323,9 @@ class EffectTrail(Sprite):
 # Level Select
 class Selections(Sprite):
     def __init__(self, game, level_number=0):
-        self.groups = game.selections
+        self.groups = game.selections, game.all_sprites
         Sprite.__init__(self, self.groups)
+        print(len(game.selections))
         self.game = game
         self.num = level_number
 
@@ -349,7 +350,7 @@ class Selections(Sprite):
         if collision_bound[0] <= TILESIZE and collision_bound[1] <= TILESIZE:
             self.game.state_machine.transition("Playing")
 
-    def update(self):
+    def update(self, *game_call): # *args in order for self.all_sprites.update() to not break
         if self.game.state_machine.current_state.get_state_name() != "LevelSelect":
             self.kill()
         
@@ -367,7 +368,9 @@ class Selections(Sprite):
         else:
             self.image.fill(WHITE)
         self.game.draw_text(str(self.num+1), TILESIZE, BLACK, self.width, self.height-TILESIZE/2)
-        self.click_check()
+
+        if game_call:
+            self.click_check()
         
         
 
@@ -425,11 +428,11 @@ class Boss(Sprite):
 class Xerxes(Boss):
     def __init__(self, game, x, y):
         super().__init__(game, x, y, 500, 500, XERXES_HITRECT.copy(), CYAN, TILESIZE * 2, TILESIZE * 2,
-                         [XerxesProjectileState(self), XerxesMovingState(self), XerxesStunState(self)])
+                         [XerxesStartState(self), XerxesProjectileState(self), XerxesMovingState(self), XerxesStunState(self)])
         self.terminal_y_vel = STANDARD_MAX_YVEL * 2
         self.weight = 2
         self.grav_switch: bool
-        self.vel = vec(TILESIZE, 0)
+        self.vel = vec(TILESIZE * 2, TILESIZE * 2)
 
         # this is just to see if they work and they do! for now...
         for i in range(8):
@@ -439,8 +442,9 @@ class Xerxes(Boss):
         pass
 
     def update(self):
-        self.grav_switch = True
+        self.grav_switch = False
         self.basic_update(self.terminal_y_vel, self.weight, self.grav_switch)
+        self.current_state = self.state_machine.current_state.get_state_name()
 
         """
         ring of projectiles (DONE),
@@ -456,7 +460,7 @@ class Xerxes(Boss):
 
 class X_Proj(Sprite):
     def __init__(self, game, ref_x, ref_y, radius, angle_offset, xerxes):
-        self.groups = game.all_sprites
+        self.groups = game.all_sprites, game.all_xproj
         Sprite.__init__(self, self.groups)
         self.game = game
         self.xerxes = xerxes
@@ -475,19 +479,19 @@ class X_Proj(Sprite):
         self.pos = vec(x,y)
         self.hit_rect = pg.Rect(x, y, 12, 12)
         self.rect.center = self.pos + (6,6)
+
+        self.ejection = False
+        self.rotate = True
+    
+    def eject_true(self):
+        self.ejection = True
     
     def rays(self):
         pass
-        """
-        two parter: freeze, then shoot in a straight line
-        """
 
-    def update(self):
-        hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
-        if hits:
-            # having dokill as False incase i ever want to particles
-            self.kill()
-
+    
+    def rotater(self):
+        # angle of rotation changing over time
         self.theta = (self.theta + (1*self.game.dt*self.rotate_speed)) % (2*pi)
 
         self.rect.center = self.pos
@@ -495,3 +499,16 @@ class X_Proj(Sprite):
         dx = (self.r*cos(self.theta) + self.xerxes.get_pos().x) - self.pos.x
         dy = (self.r*sin(self.theta) + self.xerxes.get_pos().y) - self.pos.y
         self.pos += (dx, dy)
+
+    def update(self):
+        # hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
+        # if hits:
+        #     # having dokill as False incase i ever want to particles
+        #     self.kill()
+
+        # if xerxes.current_state == "Projectiles": ....
+        if self.ejection:
+            self.rays()
+        elif self.rotate:
+            self.rotater()
+        

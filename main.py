@@ -29,7 +29,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         self.paused = False
         self.game_cooldown = Cooldown(3000)
         self.current_level = 0
-        self.levels = ["level1.txt","level2.txt"]
+        self.levels = ["level1.txt","level2.txt", 3, 4, 5, 6, 7]
         self.state_machine = StateMachine()
         self.states: Array[State] = [Start(self), LevelSelect(self), Playing(self)]
         self.state_machine.start_machine(self.states)
@@ -78,6 +78,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
         self.all_collectables = pg.sprite.Group()
         self.all_projectiles = pg.sprite.Group()
         self.selections = pg.sprite.Group()
+        self.all_xproj = pg.sprite.Group()
 
         # nested for loop to display each sprite to its respective position in level1.text
         for row, tiles in enumerate(self.map.data):
@@ -114,13 +115,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
                 if game_state == "Start":
                         self.state_machine.transition("LevelSelect")
             if event.type == pg.MOUSEBUTTONDOWN and game_state == "LevelSelect":
-                self.selections.click_check()
-                """
-                why won't this work?????????????????
-                it says the Group object has no attribute 'click_check' but it should because its a method of
-                selections ?????
-                STILL DONT UNDERSTAND WHAT IS APPENING HERE
-                """
+                self.selections.update(True)
 
     def quit(self):
         self.playing = False

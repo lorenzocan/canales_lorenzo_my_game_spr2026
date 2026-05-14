@@ -30,9 +30,10 @@ class LevelSelect(State):
         self.game.playing = False
         self.game.screen.fill(LEVEL_SELECT_GREEN)
         self.game.draw_text("CHOOSE", 32, WHITE, WIDTH/2, HEIGHT/8)
+        self.game.selections = pg.sprite.Group()
 
         for i in range(len(self.game.levels)):
-            Selections(self.game, i)
+            s = Selections(self.game, i)
 
     def exit(self):
         pass
@@ -52,7 +53,13 @@ class Playing(State):
     def enter(self):
         self.game.paused = False
         self.game.playing = True
-        self.game.next_level(self.game.levels[self.game.current_level])
+        try:
+            self.game.next_level(self.game.levels[self.game.current_level])
+        except:
+            self.game.next_level(self.game.levels[0])
+        else:
+            self.game.next_level(self.game.levels[self.game.current_level])
+        
 
     def exit(self):
         pass
