@@ -80,7 +80,8 @@ class Player(Sprite):
         self.effect_cd = Cooldown(100)
 
         self.health = 100
-        self.i_frames = Cooldown(250)
+        self.max_health = 100
+        self.i_frames = Cooldown(125)
 
     def get_keys(self):
         self.vel.x = 0 # setting velocity to 0 to make sure player stops after key release
@@ -159,8 +160,8 @@ class Player(Sprite):
                 # gets the class name, turns it into a string which is compared with "X_Proj"
                 self.health -= 15
             if str(hits[0].__class__.__name__) == "Xerxes":
-                self.health -= 5
-            print(self.health)
+                self.health -= 10
+            # print(self.health)
 
     def update(self):
         if self.health <= 0:
@@ -342,12 +343,14 @@ class EffectTrail(Sprite):
 
 
 
+# Screen Stuff
+
 # Level Select
 class Selections(Sprite):
     def __init__(self, game, level_number=0):
         self.groups = game.selections, game.all_sprites
         Sprite.__init__(self, self.groups)
-        print(len(game.selections))
+        # print(len(game.selections))
         self.game = game
         self.num = level_number
 
@@ -393,6 +396,24 @@ class Selections(Sprite):
 
         if game_call:
             self.click_check()
+    
+class ScreenPulse(Sprite):
+    def __init__(self, game, colour, increment):
+        self.groups = game.all_sprites
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        self.image = pg.Surface((WIDTH, HEIGHT))
+        self.image.fill(colour)
+        self.rect = self.image.get_rect()
+        self.pos = vec(0, 0) * TILESIZE
+        # self.rect.center = self.pos + (WIDTH/2, HEIGHT/2)
+        self.alpha = 255
+        self.alpha_scaler = increment
+    def update(self):
+        if self.alpha <= 10:
+            self.kill()
+        self.image.set_alpha(self.alpha)
+        self.alpha -= self.alpha_scaler
         
         
 
@@ -409,7 +430,7 @@ class Boss(Sprite):
         self.rect = self.image.get_rect()
         self.vel = vec(0,0)
         self.pos = vec(x, y) * TILESIZE
-        self.rect.center = self.pos
+        self.rect.center = self.pos - (length/2, height/2)
 
         self.hit_rect = hitbox
         self.health = health
@@ -432,6 +453,17 @@ class Boss(Sprite):
                 self.health -= 20
             print(self.health)
     
+    def correction(self):
+        if self.pos.x < TILESIZE:
+            self.pos.x = TILESIZE
+        elif self.pos.x > WIDTH - TILESIZE:
+            self.pos.x = WIDTH - TILESIZE
+        if self.pos.y < TILESIZE:
+            self.pos.y = TILESIZE
+        elif self.pos.y > HEIGHT - TILESIZE:
+            self.pos.y = HEIGHT - TILESIZE
+
+
     def basic_update(self, tyvel, weight, does_gravity):
         if self.health <= 0:
             self.alive = False
@@ -441,6 +473,7 @@ class Boss(Sprite):
             gravity(self, tyvel, weight)
         self.rect.center = self.pos
         self.pos += self.vel * self.game.dt
+        self.correction()
 
         self.hit_rect.center = self.rect.center
 
@@ -459,8 +492,8 @@ class Xerxes(Boss):
     def __init__(self, game, x, y):
         super().__init__(game, x, y, 500, 500, XERXES_HITRECT.copy(), CYAN, TILESIZE * 2, TILESIZE * 2,
                          [XerxesStartProjState(self), XerxesMovingState(self), XerxesJumpState(self), XerxesStunState(self)])
-        self.terminal_y_vel = STANDARD_MAX_YVEL * 2
-        self.weight = 2
+        self.terminal_y_vel = STANDARD_MAX_YVEL * 3
+        self.weight = 8
         self.grav_switch: bool
         self.projectile_existence = False
 
@@ -488,8 +521,8 @@ class X_Proj(Sprite):
         x = self.r*cos(self.theta) + ref_x
         y = self.r*sin(self.theta) + ref_y
         self.pos = vec(x,y)
-        self.hit_rect = pg.Rect(x, y, 12, 12)
-        self.rect.center = self.pos + (6,6)
+        self.hit_rect = pg.Rect(x, y, 20, 20)
+        self.rect.center = self.pos + (10,10)
 
         self.ejection = False
         self.rotate = False

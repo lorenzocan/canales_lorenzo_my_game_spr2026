@@ -18,6 +18,7 @@ class XerxesStartProjState(State):
         return "XStart"
 
     def enter(self):
+        self.health_lock = self.xerxes.health
         self.xerxes.grav_switch = False
         self.ring_cd = Cooldown(100)
         self.ring_count = 1
@@ -28,14 +29,15 @@ class XerxesStartProjState(State):
         print('exit xerxes XStart state')
 
     def update(self):
+        self.xerxes.vel.y = 0
         # invincibility at start state
-        self.xerxes.health = 500
+        self.xerxes.health = self.health_lock
 
         # makes the instantiaton of the projectiles really cool
         if self.ring_count <= 8 and self.ring_cd.ready():
             self.ring_cd.start()
             self.ring_count += 1
-            sprites.X_Proj(self.xerxes.game, self.xerxes.pos.x, self.xerxes.pos.y, TILESIZE * 3, self.ring_count * pi/4, self.xerxes)
+            sprites.X_Proj(self.xerxes.game, self.xerxes.pos.x - TILESIZE/2, self.xerxes.pos.y - TILESIZE/2, TILESIZE * 3, self.ring_count * pi/4, self.xerxes)
         if self.ring_count > 8:
             # after everything has been instantiated, everything starts rotating, transition to next state
             self.xerxes.game.all_xproj.update(True, False)
@@ -51,7 +53,7 @@ class XerxesMovingState(State):
 
     def enter(self):
         self.name = "XMove"
-        self.move_count = randint(3, 10)
+        self.move_count = randint(12, 23)
         self.move_counter = 0
         self.xerxes.grav_switch = False
         self.xerxes.image.fill(CYAN)
@@ -75,14 +77,13 @@ class XerxesMovingState(State):
         dy = self.move_spots[self.move_counter].y - self.init_pos.y
 
         # same thing used in Projectile - get unit vector, uniform vel each time it moves
-        self.xerxes.vel.x = (dx / sqrt(dx**2 + dy**2)) * TILESIZE * 15
-        self.xerxes.vel.y = (dy / sqrt(dx**2 + dy**2)) * TILESIZE * 15
+        self.xerxes.vel.x = (dx / sqrt(dx**2 + dy**2)) * TILESIZE * 30
+        self.xerxes.vel.y = (dy / sqrt(dx**2 + dy**2)) * TILESIZE * 30
 
         # explanation update of Selections object in sprites
         move_bound = tuple(abs(a-b) for a,b in zip(self.move_spots[self.move_counter], self.xerxes.pos))
 
         if move_bound <= (TILESIZE, TILESIZE):
-            print("YES")
             self.xerxes.game.all_xproj.update(False, True) # expels current set of 8 upon changing direction
             if self.move_counter < len(self.move_spots):
                 self.move_counter += 1 
@@ -108,17 +109,42 @@ class XerxesJumpState(State):
         return "XJump"
 
     def enter(self):
+        self.name = "XJump"
+        self.jump_count = randint(7,14)
+        self.jump_counter = 0
         self.xerxes.vel = vec(0,0)
         self.xerxes.grav_switch = True
         self.xerxes.image.fill(BLACK)
+        self.jump_cd = Cooldown(1000)
+        self.player_x = self.xerxes.game.player.pos.x
+        self.init_pos_x = self.xerxes.pos.x
         print('enter xerxes XJump state')
 
     def exit(self):
-        print('exit xerxes XJump state')
+        sprites.ScreenPulse(self.xerxes.game,RED,2)
+        self.name = None
+        self.xerxes.grav_switch = False
+        self.xerxes.pos = vec(WIDTH/2, HEIGHT/2)
+        self.vel = vec(0,0)
 
     def update(self):
-        pass
-        # print(self.xerxes.vel)
+        self.player_x = self.xerxes.game.player.pos.x
+        if self.jump_cd.ready():
+            self.jump_cd.start()
+            self.jump_counter += 1
+
+            if self.jump_counter == self.jump_count:
+                self.xerxes.state_machine.transition("XStart")
+            
+            if self.name == "XJump":
+                self.xerxes.pos.y -= 12
+                self.xerxes.vel.y = TILESIZE** 2 * 4 * -1
+                self.xerxes.vel.x = (self.player_x - self.init_pos_x) * 1.5
+
+            self.init_pos_x = self.xerxes.pos.x
+
+        if self.xerxes.vel.y >= 0:
+            self.xerxes.vel.x = 0
 
 class XerxesStunState(State):
     def __init__(self, xerxes):

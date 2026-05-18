@@ -30,6 +30,7 @@ class LevelSelect(State):
         self.game.playing = False
         self.game.screen.fill(LEVEL_SELECT_GREEN)
         self.game.draw_text("CHOOSE", 32, WHITE, WIDTH/2, HEIGHT/8)
+        self.game.draw_text("NOTE: BASICALLY EVERYTHING LEADS YOU TO LEVEL 1 BECAUSE I DONT HAVE ANYTING ELSE\nSORRY", 16, WHITE, WIDTH/2, 7*HEIGHT/8)
         self.game.selections = pg.sprite.Group()
 
         for i in range(len(self.game.levels)):

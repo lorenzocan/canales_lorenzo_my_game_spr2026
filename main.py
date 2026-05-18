@@ -142,6 +142,7 @@ class Game: # the pen factory-the outline of the game-instances of the pen arent
             self.draw_text(str(self.game_cooldown.ready()), 24, WHITE, WIDTH/2, HEIGHT/3)
             self.draw_text(str(self.player.pos), 24, WHITE, WIDTH/2, HEIGHT-TILESIZE*3)
 
+            draw_health_bar(self.screen, 40, 40, self.player.health)
             self.all_sprites.draw(self.screen) # draws all sprites (walls, mobs, players, etc)
             # draw_health_bar(self.screen, 10, 10, self.player.health)
 
