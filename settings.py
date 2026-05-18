@@ -22,7 +22,7 @@ PROJ_SPEED = 540
 
 STANDARD_MAX_YVEL = 768
 
-XERXES_HITRECT = pg.Rect(0,0, TILESIZE*4, TILESIZE*4)
+XERXES_HITRECT = pg.Rect(0,0, TILESIZE*2, TILESIZE*2)
 
 # Colour
 # a tuple that represents an rgb value

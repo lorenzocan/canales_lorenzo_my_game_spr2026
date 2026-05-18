@@ -273,7 +273,7 @@ class Projectile(Sprite):
         self.rect = self.image.get_rect()
         self.vel = vec(0,0)
         self.pos = vec(pos.x, pos.y)
-        self.speed = TILESIZE**2
+        self.speed = TILESIZE**2 / 2
         self.rect.center = self.pos
 
         self.dx = mouse_pos.x - pos.x
@@ -342,11 +342,6 @@ class EffectTrail(Sprite):
 
 
 
-
-
-
-
-
 # Level Select
 class Selections(Sprite):
     def __init__(self, game, level_number=0):
@@ -401,15 +396,6 @@ class Selections(Sprite):
         
         
 
-
-
-
-
-
-
-
-
-
 # Bosses
 
 # base boss object that will be used for any boss i create because i dont want to have to do this every time
@@ -456,7 +442,7 @@ class Boss(Sprite):
         self.rect.center = self.pos
         self.pos += self.vel * self.game.dt
 
-        self.hit_rect.center = self.pos
+        self.hit_rect.center = self.rect.center
 
         # had to switch order in which these values are checked because (I think)
         # Xerxes's hitbox was big & in the ground which counted it as colliding to the sides?
@@ -477,29 +463,11 @@ class Xerxes(Boss):
         self.weight = 2
         self.grav_switch: bool
         self.projectile_existence = False
-        self.hbimage = pg.Surface((TILESIZE*4, TILESIZE*4))
-        self.hbimage.fill(WHITE)
-
-    def mode_switch(self):
-        pass
 
     def update(self):
         self.basic_update(self.terminal_y_vel, self.weight, self.grav_switch)
         self.current_state = self.state_machine.current_state.get_state_name()
         self.projectile_existence = bool(self.game.all_xproj)
-
-        self.hbimage.fill(WHITE)
-        """
-        ring of projectiles (DONE),
-        it go spin, xerxes move around with that projectiles (DONE), 
-        it does ouchie to you, (DONE)
-        end of state, shoot them away!!!!
-
-        vulnerability time! without projectiles it cant do anythign!1
-        No contact dmagea lmao you get time to hit while it moves around aimlessly!
-        then it STOPS!1!
-        repeat!
-        """
 
 class X_Proj(Sprite):
     def __init__(self, game, ref_x, ref_y, radius, angle_offset, xerxes):
@@ -532,6 +500,7 @@ class X_Proj(Sprite):
         self.rotate = True
     
     def rays(self):
+        self.image.fill(YELLOW)
         hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
         self.rect.center = self.pos
 
