@@ -33,13 +33,12 @@ class LevelSelect(State):
         self.game.selections = pg.sprite.Group()
 
         for i in range(len(self.game.levels)):
-            s = Selections(self.game, i)
+            Selections(self.game, i)
 
     def exit(self):
         pass
 
     def update(self):
-
         self.game.selections.draw(self.game.screen)
         self.game.selections.update()
 
