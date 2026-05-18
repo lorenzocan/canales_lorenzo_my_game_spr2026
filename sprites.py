@@ -3,7 +3,7 @@ from pygame.sprite import Sprite
 from settings import *
 from utils import *
 from os import path
-from math import sin, cos, tan, pi
+from math import sin, cos, sqrt, pi
 from state_machine import *
 from ctypes import Array
 from player_states import *
@@ -93,8 +93,6 @@ class Player(Sprite):
                 print(self.state_machine.current_state)
                 self.state_machine.transition("dash")
                 print(12321313)
-
-        
         
         if not self.is_key_locked:
             if keys[pg.K_a]:
@@ -105,14 +103,11 @@ class Player(Sprite):
                 self.direction = "right"
 
             # shoot projectile
-            if keys[pg.MOUSEBUTTONDOWN]:
-                print("ASKJLKSAJ")
+            if keys[pg.K_f]:
                 if self.projectile_cd.ready():
                     self.projectile_cd.start() # resetting cooldown so that it's not a one time thing
-                    Projectile(self.game, self.rect.x, self.rect.y, pg.MOUSEBUTTONDOWN.pos)
-                    # print('p', self.pos)
-                    # print('p', self.rect.center)
-                    print(len(self.game.all_projectiles))
+                    Projectile(self.game, vec(self.rect.center), vec(pg.mouse.get_pos()))
+                    # print(len(self.game.all_projectiles))
 
             # fly
             if keys[pg.K_SPACE]:
@@ -267,9 +262,8 @@ class Coin(Sprite):
     def update(self):
         pass
 
-# Current Issue: first instance of projectile spawnws at (0,0)
 class Projectile(Sprite):
-    def __init__(self, game, x, y, mouse_pos):
+    def __init__(self, game, pos: vec, mouse_pos: vec):
         self.groups = game.all_sprites, game.all_projectiles, game.all_boss_damagers
         Sprite.__init__(self, self.groups)
         self.game = game
@@ -277,24 +271,36 @@ class Projectile(Sprite):
         self.hit_rect = PROJ_HITRECT
         self.image.fill(RED)
         self.rect = self.image.get_rect()
-        self.vel = vec(PROJ_SPEED,0)
-        self.pos = vec(x, y)
-        self.speed = 3
+        self.vel = vec(0,0)
+        self.pos = vec(pos.x, pos.y)
+        self.speed = TILESIZE**2
         self.rect.center = self.pos
-        self.mouse_pos = mouse_pos
 
+        self.dx = mouse_pos.x - pos.x
+        self.dy = mouse_pos.y - pos.y
+
+        self.effect_cd = Cooldown(10)
+    
+    def effects_trail(self):
+        if self.effect_cd.ready():
+            EffectTrail(self.game, self.rect.x, self.rect.y, self.image, 12, 12)
+
+    def collide_with_stuff(self):
+        hits = pg.sprite.spritecollide(self, self.game.all_player_damagers, False)
+        if hits:
+            if str(hits[0].__class__.__name__) == "X_Proj":
+                self.kill()
+        
     def update(self):
-        self.vel.x = cos(self.mouse_pos.x)
-        self.vel.y = sin(self.mouse_pos.y)
+        self.collide_with_stuff()
+
+        # make magnitude of vector 1 to make velocity uniform
+        self.vel.x = self.dx / sqrt(self.dx**2 + self.dy**2)
+        self.vel.y = self.dy / sqrt(self.dx**2 + self.dy**2)
         self.pos += self.speed * self.vel * self.game.dt
         self.rect.center = self.pos
 
-
-        # trying to figure out how to kill proj before in phases inside the wall
-        # collide_with_walls(self, self.game.all_walls, 'x')
-        # self.rect.centerx = self.pos.x + TILESIZE/2
-        # collide_with_walls(self, self.game.all_walls, 'y')
-        # self.rect.centery = self.pos.y + TILESIZE/2
+        self.effects_trail()
 
 class EffectTrail(Sprite):
     def __init__(self, game, x, y, sprite, scale_x = TILESIZE, scale_y = TILESIZE):
@@ -422,6 +428,7 @@ class Boss(Sprite):
         self.hit_rect = hitbox
         self.health = health
         self.max_health = max_health
+        self.alive = True
 
         # im so lazy lmao
         self.state_machine = StateMachine()
@@ -440,6 +447,9 @@ class Boss(Sprite):
             print(self.health)
     
     def basic_update(self, tyvel, weight, does_gravity):
+        if self.health <= 0:
+            self.alive = False
+            self.kill()
         self.state_machine.update()
         if does_gravity:
             gravity(self, tyvel, weight)
@@ -467,6 +477,8 @@ class Xerxes(Boss):
         self.weight = 2
         self.grav_switch: bool
         self.projectile_existence = False
+        self.hbimage = pg.Surface((TILESIZE*4, TILESIZE*4))
+        self.hbimage.fill(WHITE)
 
     def mode_switch(self):
         pass
@@ -476,7 +488,7 @@ class Xerxes(Boss):
         self.current_state = self.state_machine.current_state.get_state_name()
         self.projectile_existence = bool(self.game.all_xproj)
 
-
+        self.hbimage.fill(WHITE)
         """
         ring of projectiles (DONE),
         it go spin, xerxes move around with that projectiles (DONE), 
@@ -545,6 +557,9 @@ class X_Proj(Sprite):
         self.pos += (dx, dy)
 
     def update(self, *rotate):
+        if not self.xerxes.alive:
+            self.kill()
+
         # id rather not have this update 3 times when it should only update once
         if len(rotate) == 0:
             if self.ejection:
