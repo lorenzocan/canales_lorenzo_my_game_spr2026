@@ -62,6 +62,7 @@ class XerxesMovingState(State):
         self.init_pos = self.xerxes.pos
 
         # get random number of positions to move to (these positions are random)
+        # and compiles them into a list of coordinates
         for count in range(self.move_count):
             self.move_spots.append(vec(randint(TILESIZE*2, WIDTH-TILESIZE*2), randint(TILESIZE*2, HEIGHT-TILESIZE*2)))
         print('enter xerxes XMove state')
@@ -69,7 +70,7 @@ class XerxesMovingState(State):
     def exit(self):
         self.name = None
         self.xerxes.vel = vec(0,0)
-        self.xerxes.game.all_xproj.update(False, True)
+        self.xerxes.game.all_xproj.update(False, True) # expels everything upon state exit
         print('exit xerxes XMove state')
 
     def update(self):
@@ -80,10 +81,10 @@ class XerxesMovingState(State):
         self.xerxes.vel.x = (dx / sqrt(dx**2 + dy**2)) * TILESIZE * 30
         self.xerxes.vel.y = (dy / sqrt(dx**2 + dy**2)) * TILESIZE * 30
 
-        # explanation update of Selections object in sprites
-        move_bound = tuple(abs(a-b) for a,b in zip(self.move_spots[self.move_counter], self.xerxes.pos))
+        # explanation in update of Selections object in sprites
+        goal_bound = tuple(abs(a-b) for a,b in zip(self.move_spots[self.move_counter], self.xerxes.pos))
 
-        if move_bound <= (TILESIZE, TILESIZE):
+        if goal_bound <= (TILESIZE, TILESIZE):
             self.xerxes.game.all_xproj.update(False, True) # expels current set of 8 upon changing direction
             if self.move_counter < len(self.move_spots):
                 self.move_counter += 1 
@@ -124,7 +125,7 @@ class XerxesJumpState(State):
         sprites.ScreenPulse(self.xerxes.game,RED,2)
         self.name = None
         self.xerxes.grav_switch = False
-        self.xerxes.pos = vec(WIDTH/2, HEIGHT/2)
+        self.xerxes.pos = vec(WIDTH/2, HEIGHT/2) # upon going back to proj state it recenters itself
         self.vel = vec(0,0)
 
     def update(self):
@@ -137,8 +138,8 @@ class XerxesJumpState(State):
                 self.xerxes.state_machine.transition("XStart")
             
             if self.name == "XJump":
-                self.xerxes.pos.y -= 12
-                self.xerxes.vel.y = TILESIZE** 2 * 4 * -1
+                self.xerxes.pos.y -= 12 # without this, it just gets stuck
+                self.xerxes.vel.y = TILESIZE ** 2 * 4 * -1 # arbitrary jumber, its just big inital yvel for the jump
                 self.xerxes.vel.x = (self.player_x - self.init_pos_x) * 1.5
 
             self.init_pos_x = self.xerxes.pos.x
@@ -146,6 +147,7 @@ class XerxesJumpState(State):
         if self.xerxes.vel.y >= 0:
             self.xerxes.vel.x = 0
 
+# unused
 class XerxesStunState(State):
     def __init__(self, xerxes):
         self.xerxes = xerxes

@@ -4,6 +4,8 @@ from sprites import Selections
 from state_machine import State
 import pygame as pg
 
+# these states are more of distinguishing between certain parts of the game
+# rather than actually doing anything themselves
 class Start(State):
     def __init__(self, game):
         self.game = game

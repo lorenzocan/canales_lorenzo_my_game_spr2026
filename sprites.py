@@ -296,6 +296,7 @@ class Projectile(Sprite):
         self.collide_with_stuff()
 
         # make magnitude of vector 1 to make velocity uniform
+        # this is called a unit vector - it helps manipulate the motion of the projectile better
         self.vel.x = self.dx / sqrt(self.dx**2 + self.dy**2)
         self.vel.y = self.dy / sqrt(self.dx**2 + self.dy**2)
         self.pos += self.speed * self.vel * self.game.dt
@@ -343,7 +344,7 @@ class EffectTrail(Sprite):
 
 
 
-# Screen Stuff
+# Misc Screen Stuff
 
 # Level Select
 class Selections(Sprite):
@@ -354,7 +355,7 @@ class Selections(Sprite):
         self.game = game
         self.num = level_number
 
-        self.width = SELECT_X_OFFSET + self.num*TILESIZE*4
+        self.width = SELECT_X_OFFSET + self.num*TILESIZE*4 # offsetting everything
         self.height = SELECT_Y_OFFSET 
         """
         potential future goal: height will compare offset x and the width of the entire screen
@@ -383,6 +384,7 @@ class Selections(Sprite):
         
         # checking how close the distance btwn mouse selection square is
         collision_bound = tuple(abs(a-b) for a,b in zip(pg.mouse.get_pos(), self.pos))
+        # https://www.tutorialspoint.com/article/how-to-get-subtraction-of-tuples-in-python
         # zip stores the tuples of mouse pos and sel.pos
         # gets the first value of each tuple, gets absval of the difference, then makes it the first value of the new tuple, etc.
 
@@ -406,7 +408,6 @@ class ScreenPulse(Sprite):
         self.image.fill(colour)
         self.rect = self.image.get_rect()
         self.pos = vec(0, 0) * TILESIZE
-        # self.rect.center = self.pos + (WIDTH/2, HEIGHT/2)
         self.alpha = 255
         self.alpha_scaler = increment
     def update(self):
